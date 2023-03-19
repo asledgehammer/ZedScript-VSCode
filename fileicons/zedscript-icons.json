@@ -1,0 +1,17 @@
+{
+	"iconDefinitions": {
+		"_pie_slice": {
+			"iconPath": "./images/pie_slice.png"
+		}
+	},
+
+	"pieSlice": "_pie_slice",
+	"fileExtensions": {
+        "zed": "_pie_slice",
+        "txt": "_pie_slice"
+	},
+	"fileNames": {
+	},
+	"languageIds": {
+	}
+}

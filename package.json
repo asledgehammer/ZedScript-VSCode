@@ -23,6 +23,13 @@
       "extensions": [".zed", ".txt"],
       "configuration": "./language-configuration.json"
     }],
+    "iconThemes": [
+      {
+        "id": "zedscript-icons",
+        "label": "%ZedScriptIcons%",
+        "path": "./fileicons/zedscript-icons.json"
+      }
+    ],
     "grammars": [{
       "language": "zed",
       "scopeName": "source.zed",
