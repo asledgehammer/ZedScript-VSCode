@@ -19,8 +19,8 @@
   "contributes": {
     "languages": [{
       "id": "zed",
-      "aliases": ["Zed Script", "ZedScript", "zed"],
-      "extensions": [".zed", ".txt"],
+      "aliases": ["Zed Script", "ZedScript", "ZS"],
+      "extensions": [".zed"],
       "configuration": "./language-configuration.json"
     }],
     "iconThemes": [

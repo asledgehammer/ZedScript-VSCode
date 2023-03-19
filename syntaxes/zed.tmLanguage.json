@@ -26,14 +26,14 @@
 		"categoryName": {
 			"comment": "This is for the color of category names.",
             "name": "entity.name.type.zed",
-            "match": "(?i)^[:]*(?<=\\b(animation|animationsmesh|evolvedrecipe|fixing|install|item|mannequin|model|multistagebuild|option|recipe|sound|switchseat|template vehicle|uninstall|uniquerecipe|vehicle|attachment|items|physics|wheel)\\b)[\\s|\\n]*([^=]*)(?=({|\\n|\\r\\n))"
+            "match": "(?i)^[:]*(?<=\\b(animation|animationsmesh|evolvedrecipe|fixing|install|item|mannequin|model|multistagebuild|option|perk|recipe|sound|switchseat|template vehicle|uninstall|uniquerecipe|vehicle|attachment|items|physics|wheel)\\b)[\\s|\\n]*([^=]*)(?=({|\\n|\\r\\n))"
         },
         "constants": {
 			"comment": "This is for the color of category types, and sub object types.",
             "patterns": [
                 {
                     "name": "constant.language.zed",
-                    "match": "(?i)\\b(animation|animationsmesh|evolvedrecipe|fixing|item|imports|mannequin|module|multistagebuild|option|recipe|sound|soundtimeline|switchseat|template vehicle|uniquerecipe|vehicle|vehicleenginerpm|anim|area|attachment|clip|container|copyframe|copyframes|data|door|fixer|install|items|lightbar|model|part|passenger|physics|position|skin|table|template|uninstall|version|wheel|window|baserecipeitem|item\\n|lua)\\b"
+                    "match": "(?i)\\b(animation|animationsmesh|evolvedrecipe|fixing|item|imports|mannequin|module|multistagebuild|option|perk|recipe|sound|soundtimeline|switchseat|template vehicle|uniquerecipe|vehicle|vehicleenginerpm|anim|area|attachment|clip|container|copyframe|copyframes|data|door|fixer|install|items|lightbar|model|part|passenger|physics|position|skin|table|template|uninstall|version|wheel|window|baserecipeitem|item\\n|lua)\\b"
                 }
             ]
         },
