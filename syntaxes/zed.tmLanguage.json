@@ -1,0 +1,251 @@
+{
+    "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+    "name": "ZedScript",
+	"scopeName": "source.zed",
+	"fileTypes": [".txt", ".zed"],
+	"firstLineMatch": "(?i)([\\s]*module[\\s]+(.*)|(version[\\s]*=[\\s]*\\d[\\s]*,))",
+    "patterns": [
+        { "include": "#comments" },
+        { "include": "#categories" },
+        { "include": "#categoryName" },
+        { "include": "#recipeBody" },
+        { "include": "#constants" },
+
+        { "include": "#genericForwardSlash" },
+        { "include": "#genericColon" },
+        { "include": "#genericComma" },
+        { "include": "#genericSemiColon" },
+        { "include": "#genericNumericLiteralValue" },
+        { "include": "#nullValue" },
+        { "include": "#booleanValue" },
+        { "include": "#stringValue" },
+        { "include": "#genericEquals" },
+        { "include": "#genericForwardSlash" }
+    ],
+    "repository": {
+		"categoryName": {
+			"comment": "This is for the color of category names.",
+            "name": "entity.name.type.zed",
+            "match": "(?i)^[:]*(?<=\\b(animation|animationsmesh|evolvedrecipe|fixing|install|item|mannequin|model|multistagebuild|option|recipe|sound|switchseat|template vehicle|uninstall|uniquerecipe|vehicle|attachment|items|physics|wheel)\\b)[\\s|\\n]*([^=]*)(?=({|\\n|\\r\\n))"
+        },
+        "constants": {
+			"comment": "This is for the color of category types, and sub object types.",
+            "patterns": [
+                {
+                    "name": "constant.language.zed",
+                    "match": "(?i)\\b(animation|animationsmesh|evolvedrecipe|fixing|item|imports|mannequin|module|multistagebuild|option|recipe|sound|soundtimeline|switchseat|template vehicle|uniquerecipe|vehicle|vehicleenginerpm|anim|area|attachment|clip|container|copyframe|copyframes|data|door|fixer|install|items|lightbar|model|part|passenger|physics|position|skin|table|template|uninstall|version|wheel|window|baserecipeitem|item\\n|lua)\\b"
+                }
+            ]
+        },
+
+        "moduleName": {
+            "name": "entity.name.type.zed",
+            "match": "(?<=module )[\\s|\\n]*(.*?)(?=({|\\n))"
+        },
+        "genericEquals": {
+            "name": "constant.character.escape.zed",
+            "match": "="
+        },
+        "genericColon": {
+            "name": "constant.character.escape.zed",
+            "match": ":"
+        },
+        "genericSemiColon": {
+            "name": "constant.character.escape.zed",
+            "match": ";"
+        },
+        "genericForwardSlash": {
+            "name": "constant.character.escape.zed",
+            "match": "/"
+        },
+        "genericComma": {
+            "name": "constant.character.escape.zed",
+            "match": "\\,"
+        },
+        "genericNumericLiteralValue": {
+            "name": "constant.numeric.decimal.zed",
+            "match": "(?<=(:|=|\\|| ))[\\s]*((?!-0?(\\.0+)?$)-?(0|[1-9]\\d*)?(\\.\\d+)?(?<=\\d))[\\s]*(?=(,|;|/|\\|| ))"
+        },
+
+        "recipeBody": {
+            "begin": "(?i)(?<=(evolvedrecipe|recipe|uniquerecipe) )[^=]*[\\{|\\n]",
+            "end": "\\}",
+           
+            "patterns": [
+                { "include": "#recipeKey" },
+                { "include": "#recipeKeywords" },
+                { "include": "#recipeImplicitDestroyLeft" },
+                { "include": "#recipeImplicitDestroyCenter" },
+                { "include": "#recipeImplicitDestroyRight" },
+                { "include": "#recipeKeepDestroy" },
+
+                { "include": "#genericForwardSlash" },
+                { "include": "#genericColon" },
+				{ "include": "#genericSemiColon" },
+                { "include": "#genericComma" },
+                { "include": "#genericNumericLiteralValue" },
+                { "include": "#nullValue" },
+                { "include": "#booleanValue" },
+                { "include": "#stringValue" },
+                { "include": "#genericEquals" },
+                { "include": "#genericForwardSlash" }
+            ]
+        },
+        "recipeKeepDestroy": {
+            "comment": "Lines that involves the keywords \"keep\" and \"destory\".",
+            "name": "entity.name.type.zed",
+            "begin": "[\\s]*(?<=(destroy|keep|result) )",
+            "end": "(?=\\n)",
+            "patterns": [
+                { "include": "#genericEquals" },
+                { "include": "#genericNumericLiteralValue" },
+                { "include": "#genericComma" },
+				{ "include": "#genericSemiColon" }
+            ]
+        },
+        "recipeKeywords": {
+            "name": "keyword.control.zed",
+            "match": "(?i)\\b(keep|destroy|result)\\b"
+        },
+        "recipeKey": {
+            "match": "([^/]+)(?=:)",
+            "name": "meta.embedded.line.zed"
+        },
+        "recipeImplicitDestroyLeft": {
+            "match": "([^/]+)(?=/)",
+            "name": "entity.name.class.zed"
+        },
+        "recipeImplicitDestroyCenter": {
+            "match": "(?<=/)([^/]+)(?=/)",
+            "name": "entity.name.class.zed"
+        },
+        "recipeImplicitDestroyRight": {
+            "match": "(?<=/)([^/]+)(?=\\,)",
+            "name": "entity.name.class.zed"
+        },
+
+        "documentationAnnotationKey": {
+            "match": "@([^\\s]+)(\\n|\\s)",
+            "name": "constant.language.zed"
+        },
+        "documentationAnnotationValue": {},
+        "documentationBrace": {
+            "match": "\\{|\\}",
+            "name": "keyword.control.zed"
+        },
+        "documentationBraceContents": {
+            "match": "(?<=\\{)(.+)(?=\\})",
+            "name": "entity.name.class.zed"
+        },
+        "commentNote": {
+            "match": "(TODO|NOTE)([^\\n^(\\*/)]*)(?=(\\n|\\*/))",
+            "name": "constant.character.escape.zed"
+        },
+        "commentFixme": {
+            "match": "(FIXME)([^\\n^(\\*/)]*)(?=(\\n|\\*/))",
+            "name": "invalid.illegal.zed"
+        },
+        "commentLink": {
+            "match": "(http|https)(.*)",
+            "name": "constant.numeric.decimal.zed"
+        },
+        "comments": {
+            "patterns": [
+                {
+                    "begin": "/\\*\\*(?!/)",
+                    "captures": {
+                        "0": {
+                            "name": "punctuation.definition.comment.zed"
+                        }
+                    },
+                    "end": "\\*/",
+                    "name": "comment.block.documentation.zed",
+                    "patterns": [
+                        { "include": "#documentationAnnotationKey" },
+                        { "include": "#documentationAnnotationValue" },
+                        { "include": "#documentationBrace" },
+                        { "include": "#documentationBraceContents" },
+                        { "include": "#commentLink" },
+                        { "include": "#commentNote" },
+                        { "include": "#commentFixme" }
+                    ]
+                },
+                {
+                    "begin": "/\\*",
+                    "captures": {
+                        "0": {
+                            "name": "punctuation.definition.comment.zed"
+                        }
+                    },
+                    "end": "\\*/",
+                    "name": "comment.block.zed",
+                    "patterns": [
+                        { "include": "#commentLink" },
+                        { "include": "#commentNote" },
+                        { "include": "#commentFixme" }
+                    ]
+                },
+                {
+                    "captures": {
+                        "1": {
+                            "name": "punctuation.definition.comment.zed"
+                        }
+                    },
+                    "match": "(//).*$\\n?",
+                    "name": "comment.line.double-slash.zed",
+                    "patterns": [{ "include": "#commentNote" }]
+                }
+            ]
+        },
+        "stringValue": {
+            "name": "invalid.illegal.zed",
+            "begin": "(?i)(?<=(\\:|\\=))",
+            "end": "(?=(\\,|\\n))",
+            "patterns": [
+                { "include": "#genericColon" },
+                { "include": "#genericSemiColon" },
+                { "include": "#genericEquals" },
+                { "include": "#genericForwardSlash" },
+                { "include": "#genericNumericLiteralValue" },
+                {
+                    "name": "constant.character.escape.zed",
+                    "match": "\\|"
+                },
+                {
+                    "comment": "This is for intelligent detection of item or recipe references.",
+                    "match": "(?<=(:|;|=|\\|))[^;^=^:|\\|]+(?=(\\=|;|:))",
+                    "name": "entity.name.class.zed"
+                },
+				{
+                    "comment": "Helps with above where the nth entry is colored as well.",
+                    "match": "(?<=;)[^;^=^:|\\|]*(?=\\,)",
+                    "name": "entity.name.class.zed"
+                },
+                {
+                    "name": "string.quoted.double.zed",
+                    "match": "."
+                }
+            ]
+        },
+        "number": {
+            "name": "constant.numeric.decimal.zed",
+            "match": "(?<=(:|=))[\\s]*((?!-0?(\\.0+)?$)-?(0|[1-9]\\d*)?(\\.\\d+)?(?<=\\d))[\\s]*(?=,)"
+        },
+        "booleanValue": {
+            "name": "constant.language.zed",
+            "match": "(?i)(?<=(:|=))\\s*(true|false)\\s*(?=\\,)"
+        },
+        "nullValue": {
+            "name": "constant.language.zed",
+            "match": "(?i)(?<=(:|=))\\s*null\\s*(?=\\,)"
+        },
+        "value": {
+            "patterns": [
+                { "include": "#nullValue" },
+                { "include": "#booleanValue" },
+                { "include": "#number" },
+                { "include": "#stringValue" }
+            ]
+        }
+    }
+}
