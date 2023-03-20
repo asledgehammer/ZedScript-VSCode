@@ -1,9 +1,9 @@
 {
     "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
     "name": "ZedScript",
-	"scopeName": "source.zed",
-	"fileTypes": [".txt", ".zed"],
-	"firstLineMatch": "(?i)([\\s]*module[\\s]+(.*)|(version[\\s]*=[\\s]*\\d[\\s]*,))",
+    "scopeName": "source.zed",
+    "fileTypes": [".txt", ".zed"],
+    "firstLineMatch": "([\\s]*((?i)module[\\s]+(.+))|(VERSION[\\s]*\\=\\d*))",
     "patterns": [
         { "include": "#comments" },
         { "include": "#categories" },
@@ -23,13 +23,13 @@
         { "include": "#genericForwardSlash" }
     ],
     "repository": {
-		"categoryName": {
-			"comment": "This is for the color of category names.",
+        "categoryName": {
+            "comment": "This is for the color of category names.",
             "name": "entity.name.type.zed",
             "match": "(?i)^[:]*(?<=\\b(animation|animationsmesh|evolvedrecipe|fixing|install|item|mannequin|model|multistagebuild|option|perk|recipe|sound|switchseat|template vehicle|uninstall|uniquerecipe|vehicle|attachment|items|physics|wheel)\\b)[\\s|\\n]*([^=]*)(?=({|\\n|\\r\\n))"
         },
         "constants": {
-			"comment": "This is for the color of category types, and sub object types.",
+            "comment": "This is for the color of category types, and sub object types.",
             "patterns": [
                 {
                     "name": "constant.language.zed",
@@ -64,24 +64,38 @@
         },
         "genericNumericLiteralValue": {
             "name": "constant.numeric.decimal.zed",
-            "match": "(?<=(:|=|\\|| ))[\\s]*((?!-0?(\\.0+)?$)-?(0|[1-9]\\d*)?(\\.\\d+)?(?<=\\d))[\\s]*(?=(,|;|/|\\|| ))"
+            "match": "(?<=(:|=|\\|| ))[\\s]*((?!-0?(\\.0+)?$)-?(0|[1-9]\\d*)?(\\.\\d+)?(?<=\\d))[\\s]*(?=(,|;|/|\\|| |\\n))"
         },
 
         "recipeBody": {
             "begin": "(?i)(?<=(evolvedrecipe|recipe|uniquerecipe) )[^=]*[\\{|\\n]",
             "end": "\\}",
-           
+
             "patterns": [
+                {
+                    "name": "string.quoted.double.zed",
+                    "match": "(\\[)([^\\]]+)(\\])",
+                    "captures": {
+                        "1": {
+                            "name": "constant.language"
+                        },
+                        "3": {
+                            "name": "constant.language"
+                        }
+                    }
+                },
+                { "include": "#recipeImplicitDestroyOne" },
                 { "include": "#recipeKey" },
                 { "include": "#recipeKeywords" },
                 { "include": "#recipeImplicitDestroyLeft" },
+                { "include": "#recipeImplicitDestroyLeft2" },
                 { "include": "#recipeImplicitDestroyCenter" },
                 { "include": "#recipeImplicitDestroyRight" },
                 { "include": "#recipeKeepDestroy" },
 
                 { "include": "#genericForwardSlash" },
                 { "include": "#genericColon" },
-				{ "include": "#genericSemiColon" },
+                { "include": "#genericSemiColon" },
                 { "include": "#genericComma" },
                 { "include": "#genericNumericLiteralValue" },
                 { "include": "#nullValue" },
@@ -89,6 +103,7 @@
                 { "include": "#stringValue" },
                 { "include": "#genericEquals" },
                 { "include": "#genericForwardSlash" }
+
             ]
         },
         "recipeKeepDestroy": {
@@ -97,10 +112,23 @@
             "begin": "[\\s]*(?<=(destroy|keep|result) )",
             "end": "(?=\\n)",
             "patterns": [
+                {
+                    "name": "string.quoted.double.zed",
+                    "match": "(\\[)([^\\]]+)(\\])",
+                    "captures": {
+                        "1": {
+                            "name": "constant.language"
+                        },
+                        "3": {
+                            "name": "constant.language"
+                        }
+                    }
+                },
                 { "include": "#genericEquals" },
                 { "include": "#genericNumericLiteralValue" },
                 { "include": "#genericComma" },
-				{ "include": "#genericSemiColon" }
+                { "include": "#genericSemiColon" },
+                { "include": "#genericForwardSlash" }
             ]
         },
         "recipeKeywords": {
@@ -108,22 +136,9 @@
             "match": "(?i)\\b(keep|destroy|result)\\b"
         },
         "recipeKey": {
-            "match": "([^/]+)(?=:)",
+            "match": "([^/]+)(?=:|=)",
             "name": "meta.embedded.line.zed"
         },
-        "recipeImplicitDestroyLeft": {
-            "match": "([^/]+)(?=/)",
-            "name": "entity.name.class.zed"
-        },
-        "recipeImplicitDestroyCenter": {
-            "match": "(?<=/)([^/]+)(?=/)",
-            "name": "entity.name.class.zed"
-        },
-        "recipeImplicitDestroyRight": {
-            "match": "(?<=/)([^/]+)(?=\\,)",
-            "name": "entity.name.class.zed"
-        },
-
         "documentationAnnotationKey": {
             "match": "@([^\\s]+)(\\n|\\s)",
             "name": "constant.language.zed"
@@ -210,16 +225,6 @@
                 {
                     "name": "constant.character.escape.zed",
                     "match": "\\|"
-                },
-                {
-                    "comment": "This is for intelligent detection of item or recipe references.",
-                    "match": "(?<=(:|;|=|\\|))[^;^=^:|\\|]+(?=(\\=|;|:))",
-                    "name": "entity.name.class.zed"
-                },
-				{
-                    "comment": "Helps with above where the nth entry is colored as well.",
-                    "match": "(?<=;)[^;^=^:|\\|]*(?=\\,)",
-                    "name": "entity.name.class.zed"
                 },
                 {
                     "name": "string.quoted.double.zed",
