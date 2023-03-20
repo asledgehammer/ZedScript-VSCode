@@ -23,8 +23,16 @@ This extension contributes the following settings:
 
 ## Release Notes
 
-### 41.78.16
+## [41.78.18]
 
-Initial release.
+- Added Icon for VSCode Extension.
+- Changed 'Auto-Detect' to only include 'Module X' as 'Version=1' exists in other files and formats.
+- Improvements to Syntax highlighter.
+  - Removed some of the coloring for recipes.
+  - Fixed bugs where termination of Regex was limited where situations can arise.
+
+## [41.78.16]
+
+- Initial release
 
 ![img](https://i.imgur.com/ZLnfTK4.png)
