@@ -116,9 +116,7 @@ export class LexerBag {
 
     until(patterns: string[], removePattern = false): string | undefined {
         let s = '';
-        // eslint-disable-next-line no-constant-condition
-        while (true) {
-            if (this.isEOF()) return s;
+        while (!this.isEOF()) {
             const c = this.next();
             if (c === undefined) return s;
 
@@ -133,6 +131,8 @@ export class LexerBag {
                 }
             }
         }
+
+        return s;
     }
 
     print(message: string): void {
