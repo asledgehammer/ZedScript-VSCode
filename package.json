@@ -2,25 +2,22 @@
   "name": "zedscript-vscode",
   "displayName": "ZedScript",
   "description": "A third-party VSCode extension for supporting ZedScript, a scripting format for the game \"Project Zomboid\".",
-  "version": "41.78.18",
+  "version": "41.78.20",
   "engines": {
-    "vscode": "^1.76.0"
+    "vscode": "^1.63.0"
   },
   "icon": "./icon.png",
   "publisher": "asledgehammer",
   "author": {
     "name": "asledgehammer"
   },
+  "activationEvents": ["*"],
   "repository": {
     "type": "github",
     "url": "https://github.com/asledgehammer/ZedScript-VSCode"
   },
   "categories": [
     "Programming Languages"
-  ],
-  
-  "activationEvents": [
-    "*"
   ],
   "main": "./out/extension.js",
   "scripts": {
