@@ -1,23 +1,37 @@
 import * as vscode from 'vscode';
+import { tokenize } from './API';
+import { LexerToken } from './Lexer';
 import { ItemScope } from './scope/Item';
 import { RecipeScope } from './scope/Recipe';
-import { getScope, ScriptScope } from './scope/Scope';
+import { getScope, getTokenAt, ScriptScope } from './scope/Scope';
 
 export function activate(context: vscode.ExtensionContext) {
+    const hover1 = vscode.languages.registerHoverProvider('zed', {
+        provideHover(document: vscode.TextDocument, position: vscode.Position, _: vscode.CancellationToken) {
+            try {
+                const tokens = tokenize(document.getText(), { comments: false, location: true }).tokens as LexerToken[];
+                const token = getTokenAt(document, position, tokens);
+                const [scope, name] = getScope(document, position, tokens);
+                console.log({ scope, name, token });
+                return new vscode.Hover(new vscode.MarkdownString(hover(scope, token)));
+            } catch (err) {
+                console.error(err);
+            }
+        },
+    });
+
     const provider1 = vscode.languages.registerCompletionItemProvider('zed', {
         provideCompletionItems(
             document: vscode.TextDocument,
             position: vscode.Position,
-            token: vscode.CancellationToken,
-            context: vscode.CompletionContext
+            _: vscode.CancellationToken,
+            __: vscode.CompletionContext
         ) {
             try {
+                const tokens = tokenize(document.getText(), { comments: false, location: true }).tokens as LexerToken[];
                 const phrase = document.lineAt(position.line).text.trim().toLowerCase();
-                console.log({ phrase });
-
-                const [scope, name] = getScope(document, position);
+                const [scope, name] = getScope(document, position, tokens);
                 console.log({ scope, name });
-
                 return complete(scope, name, phrase);
             } catch (err) {
                 console.error(err);
@@ -33,7 +47,7 @@ export function activate(context: vscode.ExtensionContext) {
         },
     });
 
-    context.subscriptions.push(provider1);
+    context.subscriptions.push(provider1, hover1);
 }
 
 export function complete(scope: ScriptScope, name: string | undefined, phrase: string): vscode.CompletionItem[] {
@@ -44,4 +58,14 @@ export function complete(scope: ScriptScope, name: string | undefined, phrase: s
             return new RecipeScope().onComplete(name, phrase);
     }
     return [];
+}
+
+export function hover(scope: ScriptScope, phrase: string): string {
+    switch (scope) {
+        case 'item':
+            return new ItemScope().onHover(phrase);
+        case 'recipe':
+            return new RecipeScope().onHover(phrase);
+    }
+    return '';
 }

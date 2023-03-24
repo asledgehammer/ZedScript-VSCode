@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import { tokenize } from '../API';
 import { LexerToken } from '../Lexer';
 
+export const CODE = '```';
+
 export type ScriptScope = 'root' | 'module' | 'recipe' | 'item';
 export const Scopes = ['root', 'module', 'recipe', 'item'];
 
@@ -15,6 +17,9 @@ export type Property = {
 
     /** (Custom override completion function) */
     onComplete?: (name: string | undefined) => vscode.CompletionItem;
+
+    /** For numeric ranges for properties with limits. */
+    range?: number[];
 
     /** (For 'string' or 'enum' types) */
     values?: string[];
@@ -61,8 +66,28 @@ export abstract class Scope {
     abstract delimiter: PropertyDelimiter;
     abstract properties: { [name: string]: Property };
 
+    onHover(phrase: string): string {
+        const { properties } = this;
+        const delimiter: string = this.delimiter;
+
+        phrase = phrase.toLowerCase();
+        if (phrase.indexOf(delimiter) !== -1) phrase = phrase.split(':')[0].trim();
+        for (const key of Object.keys(properties)) {
+            if (key.toLowerCase() === phrase) {
+                const property = properties[key];
+                const desc = property.description;
+                if (desc !== undefined) return outcase(desc);
+                else return '';
+            }
+        }
+        return '';
+    }
+
     onComplete(name: string | undefined, phrase: string): vscode.CompletionItem[] {
-        const { delimiter, properties } = this;
+        const { properties } = this;
+        let delimiter: string = this.delimiter;
+
+        if (delimiter === '=') delimiter = ' =';
 
         const toReturn = [];
         phrase = phrase.toLowerCase();
@@ -77,19 +102,24 @@ export abstract class Scope {
                 }
 
                 const values = def.type === 'boolean' ? BOOLEAN_VALUES : def.values;
-                const desc = def.description ? outcase(def.description) : undefined;
+                let desc = def.description ? outcase(def.description) : '';
                 const item = new vscode.CompletionItem(key);
 
-                if (desc !== undefined) {
-                    item.documentation = new vscode.MarkdownString(outcase(desc));
-                }
                 if (values !== undefined) {
                     item.insertText = new vscode.SnippetString(key + delimiter + ' ${1|' + values!.join(',') + '|},');
                 } else {
                     if (def.type === 'float') {
                         item.insertText = new vscode.SnippetString(key + delimiter + ' ${1|1.0|},');
                     } else if (def.type === 'int') {
-                        item.insertText = new vscode.SnippetString(key + delimiter + ' ${1|1|},');
+                        if (def.range !== undefined) {
+                            item.insertText = new vscode.SnippetString(
+                                key + delimiter + ' ${1|' + def.range.join(',') + '|},'
+                            );
+
+                            desc += `${desc !== '' ? '\n\n' : ''} Range: ${def.range[0]} -> ${def.range[1]}`;
+                        } else {
+                            item.insertText = new vscode.SnippetString(key + delimiter + ' ${1|1|},');
+                        }
                     } else if (def.type === 'lua') {
                         if (def.luaPrefix !== undefined) {
                             item.insertText = new vscode.SnippetString(
@@ -103,6 +133,10 @@ export abstract class Scope {
                     }
                 }
 
+                if (desc !== '') {
+                    item.documentation = new vscode.MarkdownString(outcase(desc));
+                }
+
                 toReturn.push(item);
             }
         }
@@ -110,15 +144,37 @@ export abstract class Scope {
     }
 }
 
-export function getScope(document: vscode.TextDocument, position: vscode.Position): [ScriptScope, string?] {
-    const tokens = tokenize(document.getText(), { comments: false, location: true }).tokens as LexerToken[];
-
+export function getTokenAt(
+    document: vscode.TextDocument,
+    position: vscode.Position,
+    tokens = tokenize(document.getText(), { comments: false, location: true }).tokens as LexerToken[]
+): string {
     let i = 0;
+    const row = position.line + 1;
+    const col = position.character + 1;
+    while (tokens[i].loc!.start.row < row) i++;
+    while (tokens[i].loc!.start.column < col) {
+        if (tokens[i].loc!.start.row > row) {
+            i--;
+            break;
+        }
+        i++;
+    }
+    return tokens[i].value;
+}
+
+export function getScope(
+    document: vscode.TextDocument,
+    position: vscode.Position,
+    tokens = tokenize(document.getText(), { comments: false, location: true }).tokens as LexerToken[]
+): [ScriptScope, string?] {
+    let i = 0;
+    const row = position.line + 1;
     for (; i < tokens.length; i++) {
         const token = tokens[i] as LexerToken;
         const { loc } = token;
         const { start } = loc!;
-        if (start.row > position.line && start.column > position.character) {
+        if (start.row > row) {
             i--;
             break;
         }
@@ -184,6 +240,8 @@ export function outcase(str: string): string {
             else i++;
         }
 
+        console.log(i);
+
         // Space-only-line. Ignore it.
         if (i === -1) continue;
 
@@ -192,9 +250,9 @@ export function outcase(str: string): string {
     }
 
     // Trim the start of the line.
-    for (let index = 0; index < split.length; index++) {
-        split[index] = split[index].substring(minIndent);
-    }
-
-    return split.join('\n');
+    return split
+        .map((o) => {
+            return o.substring(minIndent);
+        })
+        .join('\n');
 }

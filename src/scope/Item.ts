@@ -20,6 +20,15 @@ import {
 export class ItemScope extends Scope {
     delimiter: PropertyDelimiter = '=';
     properties: { [name: string]: Property } = {
-        Alcoholic: { type: 'boolean' }
+        Alcoholic: { type: 'boolean' },
+        BandagePower: { type: 'int' },
+        BrakeForce: { type: 'int' },
+        CanBandage: { type: 'boolean'},
+        CanStoreWater: { type: 'boolean'},
+        ChanceToSpawnDamaged: { type: 'int' },
+        ColorBlue: { type: 'int', range: [0, 255]},
+        ColorGreen: { type: 'int', range: [0, 255]},
+        ColorRed: { type: 'int', range: [0, 255]},
+        ConditionAffectsCapacity: { type: 'boolean'},
     };
 }
