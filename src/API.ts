@@ -100,7 +100,7 @@ function stepInProperty(
 
         if (line.indexOf(operator) === -1) {
             if (line === ',') continue;
-            bag.error(`Illegal line in ${module}.${definition}.${property}: ${line}`);
+            bag.warn(`Illegal line in ${module}.${definition}.${property}: ${line}`);
         }
 
         let l = line.replace(/,/g, '');
@@ -194,7 +194,7 @@ function stepInDefinition(
             if (noSpace(line)) continue;
         }
 
-        bag.error(`Illegal line in '${module}.${name}': ${line}`);
+        bag.warn(`Illegal line in '${module}.${name}': ${line}`);
     }
 }
 
@@ -314,7 +314,7 @@ function stepInModule(bag: LexerBag) {
                 break;
 
             default:
-                bag.error('Unknown category: "' + wordLower + '"');
+                bag.warn('Unknown category: "' + wordLower + '"');
         }
     }
 }
@@ -444,7 +444,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
             if (noSpace(line)) continue;
         }
 
-        bag.error(`Illegal line in '${module}.${name}': ${line}`);
+        bag.warn(`Illegal line in '${module}.${name}': ${line}`);
         break;
     }
 
@@ -476,7 +476,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 continue;
             } else if (line === ',') continue;
 
-            bag.error(`Illegal line in '${parent}.Area[${name}]': ${line}`);
+            bag.warn(`Illegal line in '${parent}.Area[${name}]': ${line}`);
             break;
         }
     }
@@ -510,7 +510,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 continue;
             } else if (line === ',') continue;
 
-            bag.error(`Illegal line in '${parent}.Attachment[${name}]': ${line}`);
+            bag.warn(`Illegal line in '${parent}.Attachment[${name}]': ${line}`);
             break;
         }
     }
@@ -597,7 +597,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 if (noSpace(line)) continue;
             }
 
-            bag.error(`Illegal line in '${parent}.Part[${name}]': ${line}`);
+            bag.warn(`Illegal line in '${parent}.Part[${name}]': ${line}`);
             break;
         }
     }
@@ -631,7 +631,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 continue;
             } else if (line === ',') continue;
 
-            bag.error(`Illegal line in '${parent}.${name}': ${line}`);
+            bag.warn(`Illegal line in '${parent}.${name}': ${line}`);
             break;
         }
     }
@@ -663,7 +663,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 continue;
             } else if (line === ',') continue;
 
-            bag.error(`Illegal line in '${parent}.container': ${line}`);
+            bag.warn(`Illegal line in '${parent}.container': ${line}`);
             break;
         }
     }
@@ -696,7 +696,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 continue;
             } else if (line === ',') continue;
 
-            bag.error(`Illegal line in '${parent}.${name}': ${line}`);
+            bag.warn(`Illegal line in '${parent}.${name}': ${line}`);
             break;
         }
     }
@@ -729,7 +729,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 continue;
             } else if (line === ',') continue;
 
-            bag.error(`Illegal line in '${parent}.install': ${line}`);
+            bag.warn(`Illegal line in '${parent}.install': ${line}`);
             break;
         }
     }
@@ -762,7 +762,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 continue;
             } else if (line === ',') continue;
 
-            bag.error(`Illegal line in '${parent}.lightbar': ${line}`);
+            bag.warn(`Illegal line in '${parent}.lightbar': ${line}`);
             break;
         }
     }
@@ -795,7 +795,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 continue;
             } else if (line === ',') continue;
 
-            bag.error(`Illegal line in '${parent}.model': ${line}`);
+            bag.warn(`Illegal line in '${parent}.model': ${line}`);
             break;
         }
     }
@@ -829,7 +829,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 continue;
             } else if (line === ',') continue;
 
-            bag.error(`Illegal line in '${parent}.${name}': ${line}`);
+            bag.warn(`Illegal line in '${parent}.${name}': ${line}`);
             break;
         }
     }
@@ -901,7 +901,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 if (noSpace(line)) continue;
             }
 
-            bag.error(`Illegal line in '${parent}.${name}': ${line}`);
+            bag.warn(`Illegal line in '${parent}.${name}': ${line}`);
             break;
         }
     }
@@ -935,7 +935,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 continue;
             } else if (line === ',') continue;
 
-            bag.error(`Illegal line in '${parent}.${name}': ${line}`);
+            bag.warn(`Illegal line in '${parent}.${name}': ${line}`);
             break;
         }
     }
@@ -968,7 +968,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 continue;
             } else if (line === ',') continue;
 
-            bag.error(`Illegal line in '${parent}.skin': ${line}`);
+            bag.warn(`Illegal line in '${parent}.skin': ${line}`);
             break;
         }
     }
@@ -1001,7 +1001,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 continue;
             } else if (line === ',') continue;
 
-            bag.error(`Illegal line in '${parent}.sound': ${line}`);
+            bag.warn(`Illegal line in '${parent}.sound': ${line}`);
             break;
         }
     }
@@ -1035,7 +1035,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 continue;
             } else if (line === ',') continue;
 
-            bag.error(`Illegal line in '${parent}.${name}': ${line}`);
+            bag.warn(`Illegal line in '${parent}.${name}': ${line}`);
             break;
         }
     }
@@ -1096,7 +1096,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 if (noSpace(line)) continue;
             }
 
-            bag.error(`Illegal line in '${parent}.${name}': ${line}`);
+            bag.warn(`Illegal line in '${parent}.${name}': ${line}`);
             break;
         }
     }
@@ -1161,7 +1161,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 if (noSpace(line)) continue;
             }
 
-            bag.error(`Illegal line in '${module}.${name}': ${line}`);
+            bag.warn(`Illegal line in '${module}.${name}': ${line}`);
             break;
         }
     }
@@ -1191,7 +1191,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 continue;
             } else if (line === ',') continue;
 
-            bag.error(`Illegal line in '${parent}[${index}]': ${line}`);
+            bag.warn(`Illegal line in '${parent}[${index}]': ${line}`);
             break;
         }
     }
@@ -1224,7 +1224,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 continue;
             } else if (line === ',') continue;
 
-            bag.error(`Illegal line in '${parent}.lua': ${line}`);
+            bag.warn(`Illegal line in '${parent}.lua': ${line}`);
             break;
         }
     }
@@ -1264,7 +1264,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 if (noSpace(line)) continue;
             }
 
-            bag.error(`Illegal line in '${parent}.${name}': ${line}`);
+            bag.warn(`Illegal line in '${parent}.${name}': ${line}`);
             break;
         }
     }
@@ -1297,7 +1297,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 continue;
             } else if (line === ',') continue;
 
-            bag.error(`Illegal line in '${parent}.uninstall': ${line}`);
+            bag.warn(`Illegal line in '${parent}.uninstall': ${line}`);
             break;
         }
     }
@@ -1331,7 +1331,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 continue;
             } else if (line === ',') continue;
 
-            bag.error(`Illegal line in '${parent}.${name}': ${line}`);
+            bag.warn(`Illegal line in '${parent}.${name}': ${line}`);
             break;
         }
     }
@@ -1364,7 +1364,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 continue;
             } else if (line === ',') continue;
 
-            bag.error(`Illegal line in '${parent}.window': ${line}`);
+            bag.warn(`Illegal line in '${parent}.window': ${line}`);
             break;
         }
     }

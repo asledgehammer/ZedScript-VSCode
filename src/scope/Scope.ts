@@ -2,17 +2,28 @@ import * as vscode from 'vscode';
 import { tokenize } from '../API';
 import { LexerToken } from '../Lexer';
 
-export const Scopes = ['root', 'module', 'recipe', 'item'];
-export const BOOLEAN_VALUES = ['true', 'false'];
 export type ScriptScope = 'root' | 'module' | 'recipe' | 'item';
-export type ValueType = 'boolean' | 'float' | 'int' | 'string';
+export const Scopes = ['root', 'module', 'recipe', 'item'];
+
+export type ValueType = 'boolean' | 'float' | 'int' | 'string' | 'lua';
 export type Property = {
+    /** The type of property. */
     type: ValueType;
+
+    /** Markdown documentation. */
     description?: string;
-    values?: string[];
+
+    /** (Custom override completion function) */
     onComplete?: (name: string | undefined) => vscode.CompletionItem;
+
+    /** (For 'string' or 'enum' types) */
+    values?: string[];
+
+    /** (For 'lua' type only) */
+    luaPrefix?: string;
 };
 
+export const BOOLEAN_VALUES = ['true', 'false'];
 export const SKILL_VALUES = [
     'Aiming',
     'Axe',
@@ -65,11 +76,12 @@ export abstract class Scope {
                     continue;
                 }
 
-                const { description: desc, values } = def;
+                const values = def.type === 'boolean' ? BOOLEAN_VALUES : def.values;
+                const desc = def.description ? outcase(def.description) : undefined;
                 const item = new vscode.CompletionItem(key);
 
-                if (def.description !== undefined) {
-                    item.documentation = new vscode.MarkdownString(desc);
+                if (desc !== undefined) {
+                    item.documentation = new vscode.MarkdownString(outcase(desc));
                 }
                 if (values !== undefined) {
                     item.insertText = new vscode.SnippetString(key + delimiter + ' ${1|' + values!.join(',') + '|},');
@@ -78,6 +90,14 @@ export abstract class Scope {
                         item.insertText = new vscode.SnippetString(key + delimiter + ' ${1|1.0|},');
                     } else if (def.type === 'int') {
                         item.insertText = new vscode.SnippetString(key + delimiter + ' ${1|1|},');
+                    } else if (def.type === 'lua') {
+                        if (def.luaPrefix !== undefined) {
+                            item.insertText = new vscode.SnippetString(
+                                key + delimiter + ' ${1|' + def.luaPrefix + '.' + toPascalCase(name!) + '|},'
+                            );
+                        } else {
+                            item.insertText = new vscode.SnippetString(key + delimiter + ' ${1||},');
+                        }
                     } else {
                         item.insertText = new vscode.SnippetString(key + delimiter + ' $1,');
                     }
@@ -141,4 +161,40 @@ export function toPascalCase(str: string): string {
             return o;
         })
         .join('');
+}
+
+export function outcase(str: string): string {
+    if (str.indexOf('\n') === -1) return str;
+
+    const split = str.split('\n');
+
+    // Find the smallest indention of spaces in each line with characters.
+    let minIndent = 999;
+    for (const line of split) {
+        // Ignore empty lines.
+        if (line.trim() === '') continue;
+
+        let i = -1;
+        for (let index = 0; index < split.length; index++) {
+            if (line[index].indexOf(' ') === -1) {
+                if (i === -1) i = 0;
+                break;
+            }
+            if (i === -1) i = 1;
+            else i++;
+        }
+
+        // Space-only-line. Ignore it.
+        if (i === -1) continue;
+
+        // Set the minimum indention if 'i' is smaller.
+        if (minIndent > i) minIndent = i;
+    }
+
+    // Trim the start of the line.
+    for (let index = 0; index < split.length; index++) {
+        split[index] = split[index].substring(minIndent);
+    }
+
+    return split.join('\n');
 }

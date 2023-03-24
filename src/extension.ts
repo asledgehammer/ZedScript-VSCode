@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { ItemScope } from './scope/Item';
 import { RecipeScope } from './scope/Recipe';
 import { getScope, ScriptScope } from './scope/Scope';
 
@@ -10,12 +11,17 @@ export function activate(context: vscode.ExtensionContext) {
             token: vscode.CancellationToken,
             context: vscode.CompletionContext
         ) {
-            const [scope, name] = getScope(document, position);
-            console.log({scope, name});
-            const phrase = document.lineAt(position.line).text.trim().toLowerCase();
+            try {
+                const phrase = document.lineAt(position.line).text.trim().toLowerCase();
+                console.log({ phrase });
 
-            return complete(scope, name, phrase);
+                const [scope, name] = getScope(document, position);
+                console.log({ scope, name });
 
+                return complete(scope, name, phrase);
+            } catch (err) {
+                console.error(err);
+            }
             // // a completion item that retriggers IntelliSense when being accepted,
             // // the `command`-property is set which the editor will execute after
             // // completion has been inserted. Also, the `insertText` is set so that
@@ -32,6 +38,8 @@ export function activate(context: vscode.ExtensionContext) {
 
 export function complete(scope: ScriptScope, name: string | undefined, phrase: string): vscode.CompletionItem[] {
     switch (scope) {
+        case 'item':
+            return new ItemScope().onComplete(name, phrase);
         case 'recipe':
             return new RecipeScope().onComplete(name, phrase);
     }
