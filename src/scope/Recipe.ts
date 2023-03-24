@@ -1,5 +1,13 @@
 import * as vscode from 'vscode';
-import { BOOLEAN_VALUES, Property as Property, PropertyDelimiter, Scope } from './Scope';
+import {
+    BOOLEAN_VALUES,
+    Property as Property,
+    PropertyDelimiter,
+    Scope,
+    SKILL_LEVEL_VALUES,
+    SKILL_VALUES,
+    toPascalCase,
+} from './Scope';
 
 export class RecipeScope extends Scope {
     delimiter: PropertyDelimiter = ':';
@@ -95,6 +103,18 @@ Category: Carpentry,
 \`\`\`
 `,
         },
+        Heat: {
+            type: 'float',
+            description: `
+### Description:
+Specifies how much time will be spent on crafting.
+
+### Example:
+\`\`\`zed
+Time: 230.0,
+\`\`\`
+`,
+        },
         InSameInventory: {
             type: 'boolean',
             description: `
@@ -105,6 +125,19 @@ only one container (the one where the crafting menu was opened).
 ### Example:
 \`\`\`zed
 InSameInventory: true,
+\`\`\`
+`,
+        },
+        NearItem: {
+            type: 'string',
+            description: `
+### Description:
+Allows crafting only if there is an object nearby with the name of the value,
+which is specified in the parameter.
+
+### Example:
+\`\`\`zed
+NearItem: Workbench,
 \`\`\`
 `,
         },
@@ -123,9 +156,25 @@ NeedToBeLearn: true,
 `,
             values: BOOLEAN_VALUES,
         },
+        Obsolete: {
+            type: 'boolean',
+            description: `
+### Description:
+If the parameter is true, then the recipe will be removed from the game.
+The parameter can be useful for overriding and removing vanilla recipes.
+
+### Example:
+\`\`\`zed
+Obsolete: true,
+\`\`\`
+`,
+            values: BOOLEAN_VALUES,
+        },
         OnCanPerform: {
             type: 'string',
-            description: `
+            onComplete: (name: string | undefined): vscode.CompletionItem => {
+                const key = 'OnCanPerform';
+                const desc = `
 ### Description:
 The parameter contains the name of a Lua function that
 will check the condition necessary to start crafting.
@@ -142,11 +191,19 @@ function Recipe.OnCanPerform.HockeyMaskSmashBottle(recipe, playerObj)
     return (wornItem ~= nil) and (wornItem:getType() == "Hat_HockeyMask")
 end
 \`\`\`
-`,
+`;
+                const nameProper = toPascalCase(name!);
+                const item = new vscode.CompletionItem(key);
+                item.documentation = new vscode.MarkdownString(desc);
+                item.insertText = new vscode.SnippetString(key + ': Recipe.' + key + '.${1|' + nameProper + '|},');
+                return item;
+            },
         },
         OnCreate: {
             type: 'string',
-            description: `
+            onComplete: (name: string | undefined): vscode.CompletionItem => {
+                const key = 'OnCreate';
+                const desc = `
 ### Description:
 The parameter contains the name of the Lua function that
 is called before using the resources and getting the
@@ -165,11 +222,51 @@ function Recipe.OnCreate.Dismantle(items, result, player)
     player:getInventory():AddItem("Base.ElectronicsScrap");
 end
 \`\`\`
-`,
+`;
+                const nameProper = toPascalCase(name!);
+                const item = new vscode.CompletionItem(key);
+                item.documentation = new vscode.MarkdownString(desc);
+                item.insertText = new vscode.SnippetString(key + ': Recipe.' + key + '.${1|' + nameProper + '|},');
+                return item;
+            },
+        },
+        OnGiveXP: {
+            type: 'string',
+            onComplete: (name: string | undefined): vscode.CompletionItem => {
+                const key = 'OnGiveXP';
+                const desc = `
+### Description:
+The parameter contains the name of a Lua function that gives
+experience to the crafting player.
+
+### Example:
+\`\`\`zed
+OnGiveXP: Recipe.OnGiveXP.SawLogs,
+\`\`\`
+
+### Implemented Lua Function:
+\`\`\`lua
+function Recipe.OnGiveXP.SawLogs(recipe, ingredients, result, player)
+    if player:getPerkLevel(Perks.Woodwork) <= 3 then
+        player:getXp():AddXP(Perks.Woodwork, 3);
+    else
+        player:getXp():AddXP(Perks.Woodwork, 1);
+    end
+end
+\`\`\`
+`;
+                const nameProper = toPascalCase(name!);
+                const item = new vscode.CompletionItem(key);
+                item.documentation = new vscode.MarkdownString(desc);
+                item.insertText = new vscode.SnippetString(key + ': Recipe.' + key + '.${1|' + nameProper + '|},');
+                return item;
+            },
         },
         OnTest: {
             type: 'string',
-            description: `
+            onComplete: (name: string | undefined): vscode.CompletionItem => {
+                const key = 'OnTest';
+                const desc = `
 ### Description:
 The parameter contains the name of the Lua function that
 checks the resources (items) used in crafting and returns
@@ -189,7 +286,13 @@ function Recipe.OnTest.IsNotWorn(item)
     return true
 end
 \`\`\`
-`,
+`;
+                const nameProper = toPascalCase(name!);
+                const item = new vscode.CompletionItem(key);
+                item.documentation = new vscode.MarkdownString(desc);
+                item.insertText = new vscode.SnippetString(key + ': Recipe.' + key + '.${1|' + nameProper + '|},');
+                return item;
+            },
         },
         Override: {
             type: 'boolean',
@@ -259,6 +362,27 @@ Result: FishingHook = 10,
 \`\`\`
 `,
         },
+        SkillRequired: {
+            type: 'string',
+            onComplete: (name: string | undefined): vscode.CompletionItem => {
+                const key = 'SkillRequired';
+                const desc = `
+### Description:
+The parameter indicates the required skill and its level for crafting.
+
+### Example:
+\`\`\`zed
+SkillRequired: Woodwork = 7,
+\`\`\`
+`;
+                const item = new vscode.CompletionItem(key);
+                item.documentation = new vscode.MarkdownString(desc);
+                item.insertText = new vscode.SnippetString(
+                    key + ': ${1|' + SKILL_VALUES.join(',') + '|} = ${2|' + SKILL_LEVEL_VALUES.join(',') + '|},'
+                );
+                return item;
+            },
+        },
         Sound: {
             type: 'string',
             description: `
@@ -272,7 +396,7 @@ Sound: PutItemInBag,
 `,
         },
         Time: {
-            type: 'number',
+            type: 'float',
             description: `
 ### Description:
 Specifies how much time will be spent on crafting.

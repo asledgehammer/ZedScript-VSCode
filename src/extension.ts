@@ -10,10 +10,11 @@ export function activate(context: vscode.ExtensionContext) {
             token: vscode.CancellationToken,
             context: vscode.CompletionContext
         ) {
-            const scope = getScope(document, position);
+            const [scope, name] = getScope(document, position);
+            console.log({scope, name});
             const phrase = document.lineAt(position.line).text.trim().toLowerCase();
 
-            return complete(scope, phrase);
+            return complete(scope, name, phrase);
 
             // // a completion item that retriggers IntelliSense when being accepted,
             // // the `command`-property is set which the editor will execute after
@@ -29,10 +30,10 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(provider1);
 }
 
-export function complete(scope: ScriptScope, phrase: string): vscode.CompletionItem[] {
+export function complete(scope: ScriptScope, name: string | undefined, phrase: string): vscode.CompletionItem[] {
     switch (scope) {
         case 'recipe':
-            return new RecipeScope().onComplete(phrase);
+            return new RecipeScope().onComplete(name, phrase);
     }
     return [];
 }
