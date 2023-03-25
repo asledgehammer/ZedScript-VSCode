@@ -4,6 +4,17 @@ All notable changes to the "zed" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [41.78.23]
+
+- Fixed VSCode version to slightly newer installations of the editor.
+- Documented generic item-scope properties.
+- Revised Scope API.
+  - Implemented enum support.
+  - Improved documentation population by using properties in property objects.
+  - Improved lua properties.
+  - Added range support for integer-property documentation.
+- Implemented hover-documentation support for recipe and item properties.
+
 ## [41.78.19]
 
 - Fixed VSCode version to support older installations of the editor.
