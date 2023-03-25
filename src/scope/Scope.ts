@@ -3,11 +3,15 @@ import { tokenize } from '../API';
 import { LexerToken } from '../Lexer';
 
 export const CODE = '```';
+export const HEAD = '###';
+export const DESC = `${HEAD} Description:`;
+export const EXAMPLE = `${HEAD} Example:`;
+export const LUA_EXAMPLE = `${HEAD} Lua Example:`;
 
 export type ScriptScope = 'root' | 'module' | 'recipe' | 'item';
 export const Scopes = ['root', 'module', 'recipe', 'item'];
 
-export type ValueType = 'boolean' | 'float' | 'int' | 'string' | 'lua';
+export type ValueType = 'boolean' | 'float' | 'int' | 'string' | 'enum' | 'lua';
 export type Property = {
     /** The type of property. */
     type: ValueType;
@@ -22,10 +26,14 @@ export type Property = {
     range?: number[];
 
     /** (For 'string' or 'enum' types) */
-    values?: string[];
+    values?: string[] | { [name: string]: any };
 
     /** (For 'lua' type only) */
     luaPrefix?: string;
+
+    example?: string;
+
+    luaExample?: string;
 };
 
 export const BOOLEAN_VALUES = ['true', 'false'];
@@ -71,13 +79,50 @@ export abstract class Scope {
         const delimiter: string = this.delimiter;
 
         phrase = phrase.toLowerCase();
-        if (phrase.indexOf(delimiter) !== -1) phrase = phrase.split(':')[0].trim();
+        if (phrase.indexOf(delimiter) !== -1) phrase = phrase.split(this.delimiter)[0].trim();
         for (const key of Object.keys(properties)) {
             if (key.toLowerCase() === phrase) {
-                const property = properties[key];
-                const desc = property.description;
-                if (desc !== undefined) return outcase(desc);
-                else return '';
+                const def = properties[key];
+
+                let desc = '';
+                if (def.description !== undefined) {
+                    desc += `${DESC}\n${outcase(def.description)}\n`;
+                }
+                if (def.example !== undefined) {
+                    desc += `${EXAMPLE}\n${CODE}zed\n${outcase(def.example)}\n${CODE}\n`;
+                }
+                if (def.luaExample !== undefined) {
+                    desc += `${EXAMPLE}\n${CODE}lua\n${outcase(def.luaExample)}\n${CODE}\n`;
+                }
+
+                if (def.type === 'boolean') {
+                    desc += '### Values:\n- true\n- false\n';
+                } else if (def.type === 'enum' && def.values !== undefined) {
+                    if (Array.isArray(def.values)) {
+                        /* Build values documentation. */
+                        let d = '### Values:';
+                        for (const value of def.values) {
+                            d += `\n- ${value}`;
+                        }
+                        desc += d;
+                    } else {
+                        const keys = Object.keys(def.values);
+                        keys.sort((a, b) => a.localeCompare(b));
+
+                        let d = '### Values:';
+                        for (const nkey of keys) {
+                            const value = def.values[nkey];
+                            d += `\n- ${value}: ${nkey}`;
+                        }
+                        desc += d;
+                    }
+                } else if (def.type === 'int') {
+                    if (def.range !== undefined) {
+                        desc += `${desc !== '' ? '\n\n' : ''} Range: ${def.range[0]} -> ${def.range[1]}`;
+                    }
+                }
+                
+                return desc;
             }
         }
         return '';
@@ -101,40 +146,77 @@ export abstract class Scope {
                     continue;
                 }
 
-                const values = def.type === 'boolean' ? BOOLEAN_VALUES : def.values;
-                let desc = def.description ? outcase(def.description) : '';
-                const item = new vscode.CompletionItem(key);
-
-                if (values !== undefined) {
-                    item.insertText = new vscode.SnippetString(key + delimiter + ' ${1|' + values!.join(',') + '|},');
-                } else {
-                    if (def.type === 'float') {
-                        item.insertText = new vscode.SnippetString(key + delimiter + ' ${1|1.0|},');
-                    } else if (def.type === 'int') {
-                        if (def.range !== undefined) {
-                            item.insertText = new vscode.SnippetString(
-                                key + delimiter + ' ${1|' + def.range.join(',') + '|},'
-                            );
-
-                            desc += `${desc !== '' ? '\n\n' : ''} Range: ${def.range[0]} -> ${def.range[1]}`;
-                        } else {
-                            item.insertText = new vscode.SnippetString(key + delimiter + ' ${1|1|},');
-                        }
-                    } else if (def.type === 'lua') {
-                        if (def.luaPrefix !== undefined) {
-                            item.insertText = new vscode.SnippetString(
-                                key + delimiter + ' ${1|' + def.luaPrefix + '.' + toPascalCase(name!) + '|},'
-                            );
-                        } else {
-                            item.insertText = new vscode.SnippetString(key + delimiter + ' ${1||},');
-                        }
-                    } else {
-                        item.insertText = new vscode.SnippetString(key + delimiter + ' $1,');
-                    }
+                let desc = '';
+                if (def.description !== undefined) {
+                    desc += `${DESC}\n${outcase(def.description)}\n`;
+                }
+                if (def.example !== undefined) {
+                    desc += `${EXAMPLE}\n${CODE}zed\n${outcase(def.example)}\n${CODE}\n`;
+                }
+                if (def.luaExample !== undefined) {
+                    desc += `${EXAMPLE}\n${CODE}lua\n${outcase(def.luaExample)}\n${CODE}\n`;
                 }
 
+                const item = new vscode.CompletionItem(key);
+
+                if (def.type === 'boolean') {
+                    item.insertText = new vscode.SnippetString(
+                        key + delimiter + ' ${1|' + BOOLEAN_VALUES.join(',') + '|},'
+                    );
+                    desc += '### Values:\n- true\n- false\n';
+                } else if (def.type === 'enum' && def.values !== undefined) {
+                    if (Array.isArray(def.values)) {
+                        item.insertText = new vscode.SnippetString(
+                            key + delimiter + ' ${1|' + def.values.join(',') + '|},'
+                        );
+
+                        /* Build values documentation. */
+                        let d = '### Values:';
+                        for (const value of def.values) {
+                            d += `\n- ${value}`;
+                        }
+                        desc += d;
+                    } else {
+                        const keys = Object.keys(def.values);
+                        keys.sort((a, b) => a.localeCompare(b));
+
+                        let d = '### Values:';
+                        let s = ' ${1|';
+                        for (const nkey of keys) {
+                            const value = def.values[nkey];
+                            s += `${nkey} /* ${value} */,`;
+                            d += `\n- ${value}: ${nkey}`;
+                        }
+                        s = s.substring(0, s.length - 1);
+                        desc += d;
+
+                        item.insertText = new vscode.SnippetString(key + delimiter + s + '|},');
+                    }
+                } else if (def.type === 'float') {
+                    item.insertText = new vscode.SnippetString(key + delimiter + ' ${1|1.0|},');
+                } else if (def.type === 'int') {
+                    if (def.range !== undefined) {
+                        item.insertText = new vscode.SnippetString(
+                            key + delimiter + ' ${1|' + def.range.join(',') + '|},'
+                        );
+
+                        desc += `${desc !== '' ? '\n\n' : ''} Range: ${def.range[0]} -> ${def.range[1]}`;
+                    } else {
+                        item.insertText = new vscode.SnippetString(key + delimiter + ' ${1|1|},');
+                    }
+                } else if (def.type === 'lua') {
+                    if (def.luaPrefix !== undefined) {
+                        item.insertText = new vscode.SnippetString(
+                            key + delimiter + ' ${1|' + def.luaPrefix + '.' + toPascalCase(name!) + '|},'
+                        );
+                    } else {
+                        item.insertText = new vscode.SnippetString(key + delimiter + ' ${1||},');
+                    }
+                } else {
+                    item.insertText = new vscode.SnippetString(key + delimiter + ' $1,');
+                }
                 if (desc !== '') {
-                    item.documentation = new vscode.MarkdownString(outcase(desc));
+                    item.documentation = new vscode.MarkdownString(desc);
                 }
 
                 toReturn.push(item);
@@ -206,6 +288,9 @@ export function getScope(
 }
 
 export function toPascalCase(str: string): string {
+    if (str.indexOf(' ') === -1) {
+        return str[0].toUpperCase() + str.substring(1);
+    }
     return str
         .trim()
         .toLowerCase()
@@ -222,37 +307,26 @@ export function toPascalCase(str: string): string {
 export function outcase(str: string): string {
     if (str.indexOf('\n') === -1) return str;
 
-    const split = str.split('\n');
+    str = str.replace(/\t/g, '  ');
 
-    // Find the smallest indention of spaces in each line with characters.
-    let minIndent = 999;
-    for (const line of split) {
-        // Ignore empty lines.
-        if (line.trim() === '') continue;
-
-        let i = -1;
-        for (let index = 0; index < split.length; index++) {
-            if (line[index].indexOf(' ') === -1) {
-                if (i === -1) i = 0;
-                break;
+    let split = str.split('\n');
+    let b = true;
+    while (b) {
+        // Check to see if any line doesn't start with a space.
+        split.forEach((line) => {
+            if (line !== '' && !line.startsWith(' ')) {
+                b = false;
+                return false;
             }
-            if (i === -1) i = 1;
-            else i++;
+        });
+
+        // Shift each line back by one space.
+        if (b) {
+            split = split.map((line) => {
+                return line === '' ? '' : line.substring(1);
+            });
         }
-
-        console.log(i);
-
-        // Space-only-line. Ignore it.
-        if (i === -1) continue;
-
-        // Set the minimum indention if 'i' is smaller.
-        if (minIndent > i) minIndent = i;
     }
 
-    // Trim the start of the line.
-    return split
-        .map((o) => {
-            return o.substring(minIndent);
-        })
-        .join('\n');
+    return split.join('\n');
 }

@@ -6,6 +6,7 @@ import { RecipeScope } from './scope/Recipe';
 import { getScope, getTokenAt, ScriptScope } from './scope/Scope';
 
 export function activate(context: vscode.ExtensionContext) {
+    
     const hover1 = vscode.languages.registerHoverProvider('zed', {
         provideHover(document: vscode.TextDocument, position: vscode.Position, _: vscode.CancellationToken) {
             try {

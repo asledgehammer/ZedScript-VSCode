@@ -1,5 +1,15 @@
 import * as vscode from 'vscode';
-import { CODE, Property as Property, PropertyDelimiter, Scope, SKILL_LEVEL_VALUES, SKILL_VALUES } from './Scope';
+import {
+    CODE,
+    DESC,
+    EXAMPLE,
+    outcase,
+    Property as Property,
+    PropertyDelimiter,
+    Scope,
+    SKILL_LEVEL_VALUES,
+    SKILL_VALUES,
+} from './Scope';
 
 /**
  * Templates, documents, and completes types properties for recipes in ZedScript.
@@ -14,356 +24,195 @@ export class RecipeScope extends Scope {
     properties: { [name: string]: Property } = {
         AllowDestroyedItem: {
             type: 'boolean',
-            description: `
-            ### Description:
-            If the parameter is true, then allows the use of broken items as a resource.
-
-            ### Example:
-            ${CODE}zed
-            AllowDestroyedItem: true,
-            ${CODE}
-            `,
+            description: 'If the parameter is true, then allows the use of broken items as a resource.',
+            example: 'AllowDestroyedItem: true,',
         },
         AllowFrozenItem: {
             type: 'boolean',
-            description: `
-            ### Description:
-            If the parameter is true, then allows frozen items to be used as a resource.
-
-            ### Example:
-            ${CODE}zed
-            AllowFrozenItem: true,
-            ${CODE}
-            `,
+            description: 'If the parameter is true, then allows frozen items to be used as a resource.',
+            example: 'AllowFrozenItem: true,',
         },
         AllowOnlyOne: {
             type: 'boolean',
-            description: `
-            ### Description:
-            If the parameter is true, then only one item can be crafted at a time.
-
-            ### Example:
-            ${CODE}zed
-            AllowOnlyOne: true,
-            ${CODE}
-            `,
+            description: 'If the parameter is true, then only one item can be crafted at a time.',
+            example: 'AllowOnlyOne: true,',
         },
         AllowRottenItem: {
             type: 'boolean',
-            description: `
-            ### Description:
-            If the parameter is true, then allows the use of rotten items as a resource.
-
-            ### Example:
-            ${CODE}zed
-            AllowRottenItem: true,
-            ${CODE}
-            `,
+            description: 'If the parameter is true, then allows the use of rotten items as a resource.',
+            example: 'AllowRottenItem: true,',
         },
         AnimNode: {
             type: 'string',
-            description: `
-            ### Description:
-            Specifies the ID of the animation that will be used when crafting the item.
-
-            ### Example:
-            ${CODE}zed
-            AnimNode: RipSheets,
-            ${CODE}
-            `,
+            description: 'Specifies the ID of the animation that will be used when crafting the item.',
+            example: 'AnimNode: RipSheets,',
         },
         CanBeDoneFromFloor: {
             type: 'boolean',
             description: `
-            ### Description:
-            If the parameter is true, then the crafting of the item can be done without
-            picking up resources from the floor (The player will not move items to
-            inventory)
-
-            ### Example:
-            ${CODE}zed
-            CanBeDoneFromFloor: true,
-            ${CODE}
-            `,
+                If the parameter is true, then the crafting of the item can be done without picking up resources from
+                the floor (The player will not move items to inventory)`,
+            example: 'CanBeDoneFromFloor: true',
         },
         Category: {
             type: 'string',
-            description: `
-            ### Description:
-            Specifies the category in which the recipe will be displayed.
-
-            ### Example:
-            ${CODE}zed
-            Category: Carpentry,
-            ${CODE}
-            `,
+            description: 'Specifies the category in which the recipe will be displayed.',
+            example: 'Category: Carpentry,',
         },
         Heat: {
             type: 'float',
-            description: `
-            ### Description:
-            Specifies how much time will be spent on crafting.
-
-            ### Example:
-            ${CODE}zed
-            Time: 230.0,
-            ${CODE}
-            `,
+            description: `Specifies how much time will be spent on crafting.`,
+            example: 'Time: 230.0,',
         },
         InSameInventory: {
             type: 'boolean',
             description: `
-            ### Description:
-            If the parameter is true, then the resources for crafting will be used from
-            only one container (the one where the crafting menu was opened).
-
-            ### Example:
-            ${CODE}zed
-            InSameInventory: true,
-            ${CODE}
+                If the parameter is true, then the resources for crafting will be used from only one container
+                (the one where the crafting menu was opened).
             `,
+            example: 'InSameInventory: true,',
         },
         IsHidden: {
             type: 'boolean',
-            description: `
-            ### Description:
-            If the parameter is true, then hides crafting from the crafting menu.
-
-            ### Example:
-            ${CODE}zed
-            IsHidden: true,
-            ${CODE}
-            `,
+            description: 'If the parameter is true, then hides crafting from the crafting menu.',
+            example: 'IsHidden: true,',
         },
         NearItem: {
             type: 'string',
             description: `
-            ### Description:
-            Allows crafting only if there is an object nearby with the name of the value,
-            which is specified in the parameter.
-
-            ### Example:
-            ${CODE}zed
-            NearItem: Workbench,
-            ${CODE}
+                Allows crafting only if there is an object nearby with the name of the value, which is specified in the
+                parameter.
             `,
+            example: 'NearItem: Workbench,',
         },
         NeedToBeLearn: {
             type: 'boolean',
             description: `
-            ### Description:
-            If the parameter is true, then in order to craft this item, you must first
-            learn the recipe. Usually recipes are learned through magazines or given
-            for certain perks/professions.
-
-            ### Example:
-            ${CODE}zed
-            NeedToBeLearn: true,
-            ${CODE}
+                If the parameter is true, then in order to craft this item, you must first learn the recipe. Usually
+                recipes are learned through magazines or given for certain perks/professions.
             `,
+            example: 'NeedToBeLearn: true,',
         },
         NoBrokenItems: {
             type: 'boolean',
-            description: `
-            ### Description:
-            If the parameter is true, then broken items cannot be used in crafting.
-
-            ### Example:
-            ${CODE}zed
-            NoBrokenItems: true,
-            ${CODE}
-            `,
+            description: 'If the parameter is true, then broken items cannot be used in crafting.',
+            example: 'NoBrokenItems: true,',
         },
         Obsolete: {
             type: 'boolean',
             description: `
-            ### Description:
-            If the parameter is true, then the recipe will be removed from the game.
-            The parameter can be useful for overriding and removing vanilla recipes.
-
-            ### Example:
-            ${CODE}zed
-            Obsolete: true,
-            ${CODE}
+                If the parameter is true, then the recipe will be removed from the game. The parameter can be useful for
+                overriding and removing vanilla recipes.
             `,
+            example: 'Obsolete: true,',
         },
         OnCanPerform: {
             type: 'lua',
-            luaPrefix: 'Recipe.OnCanPerform',
             description: `
-            ### Description:
-            The parameter contains the name of a Lua function that
-            will check the condition necessary to start crafting.
-
-            ### Example:
-            ${CODE}lua
-            OnCanPerform: Recipe.OnCanPerform.HockeyMaskSmashBottle,
-            ${CODE}
-
-            ### Implemented Lua Function:
-            ${CODE}lua
-            function Recipe.OnCanPerform.HockeyMaskSmashBottle(recipe, playerObj)
-                local wornItem = playerObj:getWornItem("MaskEyes")
-                return (wornItem ~= nil) and (wornItem:getType() == "Hat_HockeyMask")
-            end
-            ${CODE}
+                The parameter contains the name of a Lua function that will check the condition necessary to start
+                crafting.
+            `,
+            example: 'OnCanPerform: Recipe.OnCanPerform.HockeyMaskSmashBottle,',
+            luaPrefix: 'Recipe.OnCanPerform',
+            luaExample: `
+                function Recipe.OnCanPerform.HockeyMaskSmashBottle(recipe, playerObj)
+                    local wornItem = playerObj:getWornItem("MaskEyes")
+                    return (wornItem ~= nil) and (wornItem:getType() == "Hat_HockeyMask")
+                end
             `,
         },
         OnCreate: {
             type: 'lua',
-            luaPrefix: 'Recipe.OnCreate',
             description: `
-            ### Description:
-            The parameter contains the name of the Lua function that
-            is called before using the resources and getting the
-            crafting result. Allows you to add additional functional.
-            Resource items, a crafting result item, and a player
-            object are passed as input to the function.
-
-            ### Example:
-            ${CODE}zed
-            OnCreate: Recipe.OnCreate.Dismantle,
-            ${CODE}
-
-            ### Implemented Lua Function:
-            ${CODE}lua
-            function Recipe.OnCreate.Dismantle(items, result, player)
-                player:getInventory():AddItem("Base.ElectronicsScrap");
-            end
-            ${CODE}
+            The parameter contains the name of the Lua function that is called before using the resources and
+            getting the crafting result. Allows you to add additional functional. Resource items, a crafting result
+            item, and a player object are passed as input to the function.
+            `,
+            example: 'OnCreate: Recipe.OnCreate.Dismantle,',
+            luaPrefix: 'Recipe.OnCreate',
+            luaExample: `
+                function Recipe.OnCreate.Dismantle(items, result, player)
+                    player:getInventory():AddItem("Base.ElectronicsScrap");
+                end
             `,
         },
         OnGiveXP: {
             type: 'lua',
-            luaPrefix: 'Recipe.OnGiveXP',
             description: `
-            ### Description:
-            The parameter contains the name of a Lua function that gives
-            experience to the crafting player.
-
-            ### Example:
-            ${CODE}zed
-            OnGiveXP: Recipe.OnGiveXP.SawLogs,
-            ${CODE}
-
-            ### Implemented Lua Function:
-            ${CODE}lua
-            function Recipe.OnGiveXP.SawLogs(recipe, ingredients, result, player)
-                if player:getPerkLevel(Perks.Woodwork) <= 3 then
-                    player:getXp():AddXP(Perks.Woodwork, 3);
-                else
-                    player:getXp():AddXP(Perks.Woodwork, 1);
+            The parameter contains the name of a Lua function that gives experience to the crafting player.
+            `,
+            example: 'OnGiveXP: Recipe.OnGiveXP.SawLogs,',
+            luaPrefix: 'Recipe.OnGiveXP',
+            luaExample: `
+                function Recipe.OnGiveXP.SawLogs(recipe, ingredients, result, player)
+                    if player:getPerkLevel(Perks.Woodwork) <= 3 then
+                        player:getXp():AddXP(Perks.Woodwork, 3);
+                    else
+                        player:getXp():AddXP(Perks.Woodwork, 1);
+                    end
                 end
-            end
-            ${CODE}
             `,
         },
         OnTest: {
             type: 'lua',
-            luaPrefix: 'Recipe.OnTest',
             description: `
-            ### Description:
-            The parameter contains the name of the Lua function that
-            checks the resources (items) used in crafting and returns
-            true or false.
-
-            ### Example:
-            ${CODE}zed
-            OnTest: Recipe.OnTest.IsNotWorn,
-            ${CODE}
-
-            ### Implemented Lua Function:
-            ${CODE}lua
-            function Recipe.OnTest.IsNotWorn(item)
-                if instanceof(item, "Clothing") then
-                return not item:isWorn()
+            The parameter contains the name of the Lua function that checks the resources (items) used in crafting
+            and returns true or false.
+            `,
+            example: 'OnTest: Recipe.OnTest.IsNotWorn,',
+            luaPrefix: 'Recipe.OnTest',
+            luaExample: `
+                function Recipe.OnTest.IsNotWorn(item)
+                    if instanceof(item, "Clothing") then
+                    return not item:isWorn()
+                    end
+                    return true
                 end
-                return true
-            end
-            ${CODE}
             `,
         },
         Override: {
             type: 'boolean',
             description: `
-            ### Description:
-            If this parameter is specified, then a recipe that is
-            already loaded by the game will be overwritten with
-            this recipe. Used, for example, to overwrite vanilla
-            recipes.
-
-            ### Example:
-            ${CODE}zed
-            Override: true,
-            ${CODE}
+                If this parameter is specified, then a recipe that is already loaded by the game will be overwritten
+                with this recipe. Used, for example, to overwrite vanilla recipes.
             `,
+            example: 'Override: true,',
         },
         Prop1: {
             type: 'string',
-            description: `
-            ### Description:
-            Used to indicate the item that will be in the main
-            (right) hand during crafting.
-
-            ### Example:
-            ${CODE}zed
-            Prop1: Screwdriver,
-            ${CODE}
-            `,
+            description: 'Used to indicate the item that will be in the main (right) hand during crafting.',
+            example: 'Prop1: Screwdriver,',
         },
         Prop2: {
             type: 'string',
-            description: `
-            ### Description:
-            Used to indicate the item that will be in the main
-            (left) hand during crafting.
-
-            ### Example:
-            ${CODE}zed
-            Prop2: Screwdriver,
-            ${CODE}
-            `,
+            description: 'Used to indicate the item that will be in the main (left) hand during crafting.',
+            example: 'Prop2: Screwdriver,',
         },
         RemoveResultItem: {
             type: 'boolean',
-            description: `
-            ### Description:
-            If the parameter is true, then the recipe will not
-            return the crafting result to the player.
-
-            ### Example:
-            ${CODE}zed
-            RemoveResultItem: true,
-            ${CODE}
-            `,
+            description: 'If the parameter is true, then the recipe will not return the crafting result to the player.',
+            example: 'RemoveResultItem: true,',
         },
         Result: {
             type: 'string',
-            description: `
-            ### Description:
-            The result of crafting (item type and quantity).
-
-            ### Example:
-            ${CODE}zed
-            Result: FishingHook = 10,
-            ${CODE}
-            `,
+            description: 'The result of crafting (item type and quantity).',
+            example: 'Result: FishingHook = 10,',
         },
         SkillRequired: {
             type: 'string',
-            onComplete: (name: string | undefined): vscode.CompletionItem => {
+            onComplete: (_: string | undefined): vscode.CompletionItem => {
                 const key = 'SkillRequired';
                 const desc = `
-### Description:
-The parameter indicates the required skill and its level for crafting.
+                    ${DESC}
+                    The parameter indicates the required skill and its level for crafting.
 
-### Example:
-${CODE}zed
-SkillRequired: Woodwork = 7,
-${CODE}
-`;
+                    ${EXAMPLE}
+                    ${CODE}zed
+                    SkillRequired: Woodwork = 7,
+                    ${CODE}
+                `;
                 const item = new vscode.CompletionItem(key);
-                item.documentation = new vscode.MarkdownString(desc);
+                item.documentation = new vscode.MarkdownString(outcase(desc));
                 item.insertText = new vscode.SnippetString(
                     key + ': ${1|' + SKILL_VALUES.join(',') + '|} = ${2|' + SKILL_LEVEL_VALUES.join(',') + '|},'
                 );
@@ -372,57 +221,29 @@ ${CODE}
         },
         Sound: {
             type: 'string',
-            description: `
-            ### Description:
-            Sound that will be played when player craft item.
-
-            ### Example:
-            ${CODE}zed
-            Sound: PutItemInBag,
-            ${CODE}
-            `,
+            description: 'Sound that will be played when player craft item.',
+            example: 'Sound: PutItemInBag,',
         },
         StopOnRun: {
             type: 'boolean',
             description: `
-            ### Description:
-            If the parameter is true, then it will not be
-            possible to craft an item when the player is
-            running. If set to false, then it will be
-            possible to craft while running.
-
-            ### Example:
-            ${CODE}zed
-            StopOnRun: false,
-            ${CODE}
+                If the parameter is true, then it will not be possible to craft an item when the player is running. If
+                set to false, then it will be possible to craft while running.
             `,
+            example: 'StopOnRun: false,',
         },
         StopOnWalk: {
             type: 'boolean',
             description: `
-            ### Description:
-            If the parameter is true, then it will not be
-            possible to craft the item when the player is
-            walking. If it is false, then it will be
-            possible to craft on the go.
-
-            ### Example:
-            ${CODE}zed
-            StopOnWalk: false,
-            ${CODE}
+                If the parameter is true, then it will not be possible to craft the item when the player is walking. If
+                it is false, then it will be possible to craft on the go.
             `,
+            example: 'StopOnWalk: false,',
         },
         Time: {
             type: 'float',
-            description: `
-            ### Description:
-            Specifies how much time will be spent on crafting.
-
-            ### Example:
-            ${CODE}zed
-            Time: 230.0,
-            ${CODE}
-            `,
+            description: 'Specifies how much time will be spent on crafting.',
+            example: 'Time: 230.0,',
         },
     };
 
