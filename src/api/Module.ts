@@ -64,19 +64,19 @@ export class ModuleScript {
     readonly __name: string;
 
     constructor(bag: ParseBag) {
-        this.__name = bag.next();
+        this.__name = bag.next().value;
 
         if (this.__name !== undefined && this.__name === '') {
             throw new Error(`Name is empty.`);
         }
 
-        if (bag.next() !== '{') {
+        if (bag.next().value !== '{') {
             throw new ParseError(`Expected '{'`);
         }
 
         while (!bag.isEOF()) {
             const curr = bag.peek();
-            if (curr === '}') {
+            if (curr.value === '}') {
                 bag.next();
                 return;
             }
@@ -85,12 +85,12 @@ export class ModuleScript {
     }
 
     onImports(bag: ParseBag) {
-        if (bag.next() !== '{') {
+        if (bag.next().value !== '{') {
             new ParseError(`Expected '{' near 'imports' for module '${this.__name}'.`);
         }
 
         while (!bag.isEOF()) {
-            const line = bag.next().trim().replace(/,/g, '');
+            const line = bag.next().value.trim().replace(/,/g, '');
 
             if (line === undefined) {
                 throw new ParseError(`Unexpected EOF near 'imports' for module '${this.__name}'.`);
@@ -107,7 +107,7 @@ export class ModuleScript {
     onParse(bag: ParseBag) {
         while (!bag.isEOF()) {
             const curr = bag.next();
-            switch (curr) {
+            switch (curr.value) {
                 case '}':
                     return;
                 case 'alarmclock':
@@ -255,7 +255,7 @@ export class ModuleScript {
         const offsetOrig = bag.offset;
 
         while (!bag.isEOF()) {
-            const token = bag.next().toLowerCase();
+            const token = bag.next().value.toLowerCase();
             if (token.startsWith('type')) {
                 type = token.split('=')[1];
                 break;

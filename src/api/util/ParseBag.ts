@@ -1,16 +1,18 @@
+import { LexerToken } from '../../Lexer';
+
 export class ParseBag {
-    tokens: string[];
+    tokens: LexerToken[];
     offset = 0;
 
-    constructor(tokens: string[]) {
+    constructor(tokens: LexerToken[]) {
         this.tokens = tokens;
     }
 
-    next(): string {
+    next(): LexerToken {
         return this.tokens[this.offset++];
     }
 
-    peek(offsetArg = 0): string {
+    peek(offsetArg = 0): LexerToken {
         return this.tokens[this.offset + offsetArg];
     }
 

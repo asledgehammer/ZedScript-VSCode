@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import { tokenize } from '../API';
 
-import { LexerOptions } from '../Lexer';
+import { LexerOptions, LexerToken } from '../Lexer';
 import { ModuleScript } from './Module';
 import { SandBoxScript } from './sandbox/SandBoxOption';
 import { ScriptString } from './Script';
@@ -19,6 +19,33 @@ export class ZedScript {
 
     constructor(type: ZedScriptType) {
         this.type = type;
+    }
+
+    toScript(): string {
+        let parsed = '';
+
+        if (this.type === 'module') {
+            const keys = Object.keys(this._modules);
+            keys.sort((a, b) => a.localeCompare(b));
+            for (const key of Object.keys(this._modules)) {
+                parsed += this._modules[key].toScript('');
+            }
+        } else {
+            const keys = Object.keys(this._options);
+            keys.sort((a, b) => a.localeCompare(b));
+            for (const key of Object.keys(this._options)) {
+                parsed += this._options[key].toScript('');
+            }
+        }
+
+        parsed = parsed
+            .split('\n')
+            .filter((o) => {
+                return o.trim() !== '';
+            })
+            .join('\n');
+
+        return parsed;
     }
 
     write(format: 'json' | 'txt', path: string, options: any) {
@@ -98,6 +125,33 @@ export class ZedScript {
         return zedScript;
     }
 
+    static fromTokens(tokens: LexerToken[]): ZedScript {
+        const zedScript = new ZedScript('module');
+        let version: ScriptString;
+        const bag = new ParseBag(tokens);
+
+        while (!bag.isEOF()) {
+            const curr = bag.next();
+            const val = curr.value;
+            if (val === 'module') {
+                const module = new ModuleScript(bag);
+                zedScript.modules[module.__name] = module;
+            } else if (val === 'version') {
+                bag.next();
+                version = zedScript._version = bag.next().value;
+            } else if (val === 'option') {
+                const option = new SandBoxScript(bag);
+                zedScript.options[option.__name!] = option;
+            }
+        }
+
+        if (!version && zedScript.type === 'sandbox') {
+            throw new ParseError(`'version' is not defined in the same file where 'option' is used.`);
+        }
+
+        return zedScript;
+    }
+
     static fromScript(path: string, options: LexerOptions): ZedScript {
         let type: ZedScriptType = 'module';
         if (path.toLowerCase().indexOf('sandbox-options.txt') !== -1) {
@@ -106,22 +160,24 @@ export class ZedScript {
 
         const zedScript = new ZedScript(type);
 
-        const tokens = tokenize(path, options).tokens.map((o) => {
-            return typeof o === 'string' ? o : o.value;
-        });
+        const tokens = tokenize(path, options).tokens as LexerToken[];
+        // .map((o) => {
+        // return typeof o === 'string' ? o : o.value;
+        // });
 
         let version: ScriptString;
         const bag = new ParseBag(tokens);
 
         while (!bag.isEOF()) {
             const curr = bag.next();
-            if (curr === 'module') {
+            const val = curr.value;
+            if (val === 'module') {
                 const module = new ModuleScript(bag);
                 zedScript.modules[module.__name] = module;
-            } else if (curr === 'version') {
+            } else if (val === 'version') {
                 bag.next();
-                version = zedScript._version = bag.next();
-            } else if (curr === 'option') {
+                version = zedScript._version = bag.next().value;
+            } else if (val === 'option') {
                 const option = new SandBoxScript(bag);
                 zedScript.options[option.__name!] = option;
             }
