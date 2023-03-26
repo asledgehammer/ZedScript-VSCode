@@ -61,8 +61,12 @@ export class RecipeScope extends Scope {
         },
         Heat: {
             type: 'float',
-            description: `Specifies how much time will be spent on crafting.`,
-            example: 'Time: 230.0,',
+            description: `
+                The parameter indicates the temperature of the resource required for crafting. -1.0 (Very hot) to 1.0
+                (Very cold).
+            `,
+            example: 'Heat: -0.22,',
+            range: [-1.0, 1.0]
         },
         InSameInventory: {
             type: 'boolean',
@@ -213,12 +217,12 @@ export class RecipeScope extends Scope {
                     ${CODE}
                 `;
                 const item = new vscode.CompletionItem(key);
-                if(!enabled) {
+                if (!enabled) {
                     item.insertText = new vscode.SnippetString(key + this.delimiter + ' ${1},');
                 }
 
                 item.documentation = new vscode.MarkdownString(outcase(desc));
-                if(enabled) {
+                if (enabled) {
                     item.insertText = new vscode.SnippetString(
                         key + ': ${1|' + SKILL_VALUES.join(',') + '|} = ${2|' + SKILL_LEVEL_VALUES.join(',') + '|},'
                     );
