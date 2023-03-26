@@ -44,7 +44,7 @@ import { toArray } from './util/IO';
 export class ModuleScript {
     readonly animations: { [name: string]: AnimationScript } = {};
     readonly animationsMeshes: { [name: string]: AnimationsMeshScript } = {};
-    readonly evolvedRecipes: { [name: string]: EvolvedRecipeScript } = {};
+    readonly evolvedRecipes: { [name: string]: EvolvedRecipeScript[] } = {};
     readonly fixings: { [name: string]: FixingScript } = {};
     readonly imports: string[] = [];
     readonly importedModules: { [name: string]: ModuleScript } = {};
@@ -52,11 +52,11 @@ export class ModuleScript {
     readonly mannequins: { [name: string]: MannequinScript } = {};
     readonly models: { [name: string]: ModelScript } = {};
     readonly multiStageBuilds: { [name: string]: MultiStageBuildScript } = {};
-    readonly recipes: { [name: string]: RecipeScript } = {};
+    readonly recipes: { [name: string]: RecipeScript[] } = {};
     readonly runtimeAnimations: { [name: string]: RuntimeAnimationScript } = {};
     readonly sounds: { [name: string]: SoundScript } = {};
     readonly soundTimelines: { [name: string]: SoundTimelineScript } = {};
-    readonly uniqueRecipes: { [name: string]: UniqueRecipeScript } = {};
+    readonly uniqueRecipes: { [name: string]: UniqueRecipeScript[] } = {};
     readonly vehicles: { [name: string]: VehicleScript } = {};
     readonly vehicleTemplates: { [name: string]: VehicleTemplateScript } = {};
     readonly vehicleEngines: { [name: string]: VehicleEngineRPMScript } = {};
@@ -122,10 +122,13 @@ export class ModuleScript {
                     const animationsMesh = new AnimationsMeshScript(bag);
                     this.animationsMeshes[animationsMesh.__name!] = animationsMesh;
                     break;
-                case 'evolvedrecipe':
+                case 'evolvedrecipe': {
                     const evolvedRecipe = new EvolvedRecipeScript(bag);
-                    this.evolvedRecipes[evolvedRecipe.__name!] = evolvedRecipe;
+                    const name = evolvedRecipe.__name!;
+                    if (this.evolvedRecipes[name] === undefined) this.evolvedRecipes[name] = [];
+                    this.evolvedRecipes[name].push(evolvedRecipe);
                     break;
+                }
                 case 'fixing':
                     const fixing = new FixingScript(bag);
                     this.fixings[fixing.__name!] = fixing;
@@ -149,10 +152,13 @@ export class ModuleScript {
                     const multiStageBuild = new MultiStageBuildScript(bag);
                     this.multiStageBuilds[multiStageBuild.__name!] = multiStageBuild;
                     break;
-                case 'recipe':
+                case 'recipe': {
                     const recipe = new RecipeScript(bag);
-                    this.recipes[recipe.__name!] = recipe;
+                    const name = recipe.__name!;
+                    if (this.recipes[name] === undefined) this.recipes[name] = [];
+                    this.recipes[name].push(recipe);
                     break;
+                }
                 case 'sound':
                     const sound = new SoundScript(bag);
                     this.sounds[sound.__name!] = sound;
@@ -161,10 +167,13 @@ export class ModuleScript {
                     const soundTimeline = new SoundTimelineScript(bag);
                     this.soundTimelines[soundTimeline.__name!] = soundTimeline;
                     break;
-                case 'uniquerecipe':
-                    const uniqueRecipe = new UniqueRecipeScript(bag);
-                    this.uniqueRecipes[uniqueRecipe.__name!] = uniqueRecipe;
+                case 'uniquerecipe': {
+                    const recipe = new UniqueRecipeScript(bag);
+                    const name = recipe.__name!;
+                    if (this.uniqueRecipes[name] === undefined) this.uniqueRecipes[name] = [];
+                    this.uniqueRecipes[name].push(recipe);
                     break;
+                }
                 case 'vehicle':
                     const vehicle = new VehicleScript(bag);
                     this.vehicles[vehicle.__name!] = vehicle;
@@ -214,7 +223,15 @@ export class ModuleScript {
             keys.sort((a, b) => a.localeCompare(b));
             for (const key of keys) {
                 const value = dict[key];
-                if (typeof value === 'object') {
+                if (Array.isArray(value)) {
+                    for (const v of value) {
+                        if (typeof v === 'object') {
+                            s += v.toScript(`${prefix}    `) + '\n';
+                        } else {
+                            s += `${prefix}    ${v.toString()}\n`;
+                        }
+                    }
+                } else if (typeof value === 'object') {
                     s += dict[key].toScript(`${prefix}    `) + '\n';
                 } else {
                     s += `${prefix}    ${dict[key].toString()}\n`;
