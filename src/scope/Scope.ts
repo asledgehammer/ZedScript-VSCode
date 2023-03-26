@@ -208,10 +208,47 @@ export abstract class Scope {
                         desc += d;
                     }
                 } else if (def.type === 'float') {
-                    if (def.range !== undefined) {
+                    if (def.values !== undefined) {
+                        if (Array.isArray(def.values)) {
+                            if (enabled) {
+                                item.insertText = new vscode.SnippetString(
+                                    key +
+                                        delimiter +
+                                        ' ${1|' +
+                                        def.values
+                                            .map((o) => {
+                                                return o.toPrecision(3);
+                                            })
+                                            .join(',') +
+                                        '|},'
+                                );
+                            }
+                        } else {
+                            const keys = Object.keys(def.values);
+                            keys.sort((a, b) => a.localeCompare(b));
+
+                            if (enabled) {
+                                let s = ' ${1|';
+                                for (const nkey of keys) {
+                                    const value = def.values[nkey];
+                                    s += `${nkey} /* ${value} */,`;
+                                }
+                                s = s.substring(0, s.length - 1);
+                                item.insertText = new vscode.SnippetString(key + delimiter + s + '|},');
+                            }
+                        }
+                    } else if (def.range !== undefined) {
                         if (enabled) {
                             item.insertText = new vscode.SnippetString(
-                                key + delimiter + ' ${1|' + def.range.join(',') + '|},'
+                                key +
+                                    delimiter +
+                                    ' ${1|' +
+                                    def.range
+                                        .map((o) => {
+                                            return o.toPrecision(3);
+                                        })
+                                        .join(',') +
+                                    '|},'
                             );
                         }
                         desc += `${desc !== '' ? '\n\n' : ''} Range: ${def.range[0]} -> ${def.range[1]}`;
@@ -221,7 +258,28 @@ export abstract class Scope {
                         }
                     }
                 } else if (def.type === 'int') {
-                    if (def.range !== undefined) {
+                    if (def.values !== undefined) {
+                        if (Array.isArray(def.values)) {
+                            if (enabled) {
+                                item.insertText = new vscode.SnippetString(
+                                    key + delimiter + ' ${1|' + def.values.join(',') + '|},'
+                                );
+                            }
+                        } else {
+                            const keys = Object.keys(def.values);
+                            keys.sort((a, b) => a.localeCompare(b));
+
+                            if (enabled) {
+                                let s = ' ${1|';
+                                for (const nkey of keys) {
+                                    const value = def.values[nkey];
+                                    s += `${nkey} /* ${value} */,`;
+                                }
+                                s = s.substring(0, s.length - 1);
+                                item.insertText = new vscode.SnippetString(key + delimiter + s + '|},');
+                            }
+                        }
+                    } else if (def.range !== undefined) {
                         if (enabled) {
                             item.insertText = new vscode.SnippetString(
                                 key + delimiter + ' ${1|' + def.range.join(',') + '|},'

@@ -66,7 +66,11 @@ export class RecipeScope extends Scope {
                 (Very cold).
             `,
             example: 'Heat: -0.22,',
-            range: [-1.0, 1.0]
+            values: {
+                '-1.0': 'Very hot',
+                '1.0': 'Very cold'
+            },
+            // range: [-1.0, 1.0]
         },
         InSameInventory: {
             type: 'boolean',
