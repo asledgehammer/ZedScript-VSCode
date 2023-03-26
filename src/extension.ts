@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { tokenize } from './API';
+import { ZedScript } from './api/ZedScript';
 import { LexerToken } from './Lexer';
 import { ItemScope } from './scope/Item';
 import { RecipeScope } from './scope/Recipe';
@@ -8,16 +9,23 @@ import { getScope, getTokenAt, ScriptScope } from './scope/Scope';
 export function activate(context: vscode.ExtensionContext) {
     vscode.languages.registerDocumentFormattingEditProvider('zed', {
         provideDocumentFormattingEdits(document: vscode.TextDocument): vscode.TextEdit[] {
-            const delAll = vscode.TextEdit.delete(
-                new vscode.Range(new vscode.Position(0, 0), document.positionAt(document.getText().length))
-            );
-            const t = tokenize(document.getText(), { comments: true, location: true });
-            t.comments?.forEach((o) => {
-                (o as any).comment = true;
-            });
-            const tokens = mergeTokens(t.comments as LexerToken[], t.tokens as LexerToken[]);
-            const insert = vscode.TextEdit.insert(new vscode.Position(0, 0), format(tokens));
-            return [delAll, insert];
+            try {
+                const delAll = vscode.TextEdit.delete(
+                    new vscode.Range(new vscode.Position(0, 0), document.positionAt(document.getText().length))
+                );
+                const t = tokenize(document.getText(), { comments: false, location: true });
+                // t.comments?.forEach((o) => {
+                //     (o as any).comment = true;
+                // });
+
+                // const tokens = mergeTokens(t.comments as LexerToken[], t.tokens as LexerToken[]);
+                const script = ZedScript.fromTokens(t.tokens as LexerToken[]);
+                const insert = vscode.TextEdit.insert(new vscode.Position(0, 0), script.toScript());
+                return [delAll, insert];
+            } catch (err) {
+                console.error(err);
+            }
+            return [];
         },
     });
 
@@ -163,17 +171,15 @@ export function format(tokens: LexerToken[]): string {
                 }
             }
             prefix();
-            
+
             // Add comments without modifying them.
-            if((token as any).comment) {
+            if ((token as any).comment) {
                 s += token.value;
                 line();
                 continue;
             }
 
             const property = removeWhitespace(token.value);
-
-            
 
             let pRe = '';
             for (let index = 0; index < property.length; index++) {
