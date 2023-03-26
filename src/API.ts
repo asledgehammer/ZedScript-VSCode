@@ -50,8 +50,14 @@ function stepInOpenBracket(bag: LexerBag): string {
 
 function stepInObjectName(bag: LexerBag): string {
     const start = bag.cursor();
-    const value = bag.until(['{', '\n'])!.trim();
+    let value = bag.until(['{', '\n'])!.trim();
     if (value === '') bag.error('Name is empty.');
+
+    // Preserve the '{' so the lexer doesn't break on inline-bracing.
+    if(value.indexOf('{') === value.length - 1) {
+        value = value.substring(0, value.length - 1).trim();
+        bag.offset--;
+    }
 
     const stop = bag.cursor(bag.offset - 1);
     const token: LexerToken = { value };
@@ -229,7 +235,7 @@ function stepInImports(bag: LexerBag, module: string) {
     stepInOpenBracket(bag);
     while (!bag.isEOF()) {
         const start = bag.cursor();
-        const line = bag.until([',', '\n', '}'])?.trim();
+        const line = bag.until([',', '\n', '}'])?.trim().replace(',', '');
         const stop = bag.cursor(bag.offset - 1);
 
         if (line == undefined) {
@@ -251,6 +257,7 @@ function stepInImports(bag: LexerBag, module: string) {
 
 function stepInModule(bag: LexerBag) {
     const module = stepInObjectName(bag);
+
     stepInOpenBracket(bag);
 
     let brk = false;

@@ -41,16 +41,16 @@ export class LexerBag {
 
     commentLine() {
         this.next();
-        const start = this.cursor();
+        const start = this.cursor(this.offset - 2);
         const value = this.until(['\n'], true)!;
-        const stop = this.cursor();
-        return { loc: { start, stop }, value };
+        const stop = this.cursor(this.offset - 1);
+        return { loc: { start, stop }, value: `//${value}` };
     }
 
     commentBlock() {
         this.inCommentBlock = true;
         this.next();
-        const start = this.cursor();
+        const start = this.cursor(this.offset - 2);
         let value = '';
         let layersIn = 1;
         while (layersIn > 0) {
@@ -66,7 +66,7 @@ export class LexerBag {
         }
         const stop = this.cursor();
         this.inCommentBlock = false;
-        return { loc: { start, stop }, value: `${value}` };
+        return { loc: { start, stop }, value: `/*${value}*/` };
     }
 
     cursor(o: number = this.offset, force = false): LexerCursor {

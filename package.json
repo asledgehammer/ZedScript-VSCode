@@ -1,63 +1,89 @@
 {
-  "name": "zedscript-vscode",
-  "displayName": "ZedScript",
-  "description": "A third-party VSCode extension for supporting ZedScript, a scripting format for the game \"Project Zomboid\".",
-  "version": "41.78.23",
-  "engines": {
-    "vscode": "^1.75.0"
-  },
-  "icon": "./icon.png",
-  "publisher": "asledgehammer",
-  "author": {
-    "name": "asledgehammer"
-  },
-  "activationEvents": ["*"],
-  "repository": {
-    "type": "github",
-    "url": "https://github.com/asledgehammer/ZedScript-VSCode"
-  },
-  "categories": [
-    "Programming Languages"
-  ],
-  "main": "./out/extension.js",
-  "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
-    "lint": "eslint \"src/**/*.ts\"",
-    "watch": "tsc -watch -p ./"
-  },
-  "devDependencies": {
-    "@types/node": "^16.11.7",
-    "@types/vscode": "^1.75.0",
-    "@typescript-eslint/eslint-plugin": "^5.42.0",
-    "@typescript-eslint/parser": "^5.42.0",
-    "eslint": "^8.26.0",
-    "typescript": "^5.0.2"
-  },
-
-  "license": "MIT",
-  "contributes": {
-    "languages": [{
-      "id": "zed",
-      "aliases": ["Zed Script", "ZedScript", "ZS"],
-      "extensions": [".zed"],
-      "configuration": "./language-configuration.json",
-      "icon": {
-        "light": "pieSlice",
-        "dark": "pieSlice"
-      }
-    }],
-    "iconThemes": [
-      {
-        "id": "zedscript-icons",
-        "label": "%ZedScriptIcons%",
-        "path": "./fileicons/zedscript-icons.json"
-      }
+    "name": "zedscript-vscode",
+    "displayName": "ZedScript",
+    "description": "A third-party VSCode extension for supporting ZedScript, a scripting format for the game \"Project Zomboid\".",
+    "version": "41.78.23",
+    "engines": {
+        "vscode": "^1.75.0"
+    },
+    "icon": "./icon.png",
+    "publisher": "asledgehammer",
+    "author": {
+        "name": "asledgehammer"
+    },
+    "activationEvents": [
+        "*"
     ],
-    "grammars": [{
-      "language": "zed",
-      "scopeName": "source.zed",
-      "path": "./syntaxes/zed.tmLanguage.json"
-    }]
-  }
+    "repository": {
+        "type": "github",
+        "url": "https://github.com/asledgehammer/ZedScript-VSCode"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "main": "./out/extension.js",
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "lint": "eslint \"src/**/*.ts\"",
+        "watch": "tsc -watch -p ./"
+    },
+    "devDependencies": {
+        "@types/node": "^16.11.7",
+        "@types/vscode": "^1.75.0",
+        "@typescript-eslint/eslint-plugin": "^5.42.0",
+        "@typescript-eslint/parser": "^5.42.0",
+        "eslint": "^8.26.0",
+        "typescript": "^5.0.2"
+    },
+    "license": "MIT",
+    "contributes": {
+        "languages": [
+            {
+                "id": "zed",
+                "aliases": [
+                    "Zed Script",
+                    "ZedScript",
+                    "ZS"
+                ],
+                "extensions": [
+                    ".zed"
+                ],
+                "configuration": "./language-configuration.json",
+                "icon": {
+                    "light": "pieSlice",
+                    "dark": "pieSlice"
+                }
+            }
+        ],
+        "iconThemes": [
+            {
+                "id": "zedscript-icons",
+                "label": "%ZedScriptIcons%",
+                "path": "./fileicons/zedscript-icons.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "zed",
+                "scopeName": "source.zed",
+                "path": "./syntaxes/zed.tmLanguage.json"
+            }
+        ],
+        "configuration": {
+            "title": "ZedScript",
+            "properties": {
+                "zedscript.autoCompleteEnabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "If enabled, ZedScript will try to help complete properties when typed."
+                },
+                "zedscript.hoverPopupEnabled": {
+                  "type": "boolean",
+                  "default": true,
+                  "description": "If enabled, ZedScript will display details when hovering over script contents."
+              }
+            }
+        }
+    }
 }

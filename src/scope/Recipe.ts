@@ -201,6 +201,7 @@ export class RecipeScope extends Scope {
         SkillRequired: {
             type: 'string',
             onComplete: (_: string | undefined): vscode.CompletionItem => {
+                const enabled = vscode.workspace.getConfiguration('zedscript').get('autoCompleteEnabled');
                 const key = 'SkillRequired';
                 const desc = `
                     ${DESC}
@@ -212,10 +213,16 @@ export class RecipeScope extends Scope {
                     ${CODE}
                 `;
                 const item = new vscode.CompletionItem(key);
+                if(!enabled) {
+                    item.insertText = new vscode.SnippetString(key + this.delimiter + ' ${1},');
+                }
+
                 item.documentation = new vscode.MarkdownString(outcase(desc));
-                item.insertText = new vscode.SnippetString(
-                    key + ': ${1|' + SKILL_VALUES.join(',') + '|} = ${2|' + SKILL_LEVEL_VALUES.join(',') + '|},'
-                );
+                if(enabled) {
+                    item.insertText = new vscode.SnippetString(
+                        key + ': ${1|' + SKILL_VALUES.join(',') + '|} = ${2|' + SKILL_LEVEL_VALUES.join(',') + '|},'
+                    );
+                }
                 return item;
             },
         },

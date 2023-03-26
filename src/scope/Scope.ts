@@ -121,7 +121,7 @@ export abstract class Scope {
                         desc += `${desc !== '' ? '\n\n' : ''} Range: ${def.range[0]} -> ${def.range[1]}`;
                     }
                 }
-                
+
                 return desc;
             }
         }
@@ -133,6 +133,8 @@ export abstract class Scope {
         let delimiter: string = this.delimiter;
 
         if (delimiter === '=') delimiter = ' =';
+
+        const enabled = vscode.workspace.getConfiguration('zedscript').get('autoCompleteEnabled');
 
         const toReturn = [];
         phrase = phrase.toLowerCase();
@@ -158,17 +160,24 @@ export abstract class Scope {
                 }
 
                 const item = new vscode.CompletionItem(key);
+                if(!enabled) {
+                    item.insertText = new vscode.SnippetString(key + delimiter + ' ${1},');
+                }
 
                 if (def.type === 'boolean') {
-                    item.insertText = new vscode.SnippetString(
-                        key + delimiter + ' ${1|' + BOOLEAN_VALUES.join(',') + '|},'
-                    );
+                    if (enabled) {
+                        item.insertText = new vscode.SnippetString(
+                            key + delimiter + ' ${1|' + BOOLEAN_VALUES.join(',') + '|},'
+                        );
+                    }
                     desc += '### Values:\n- true\n- false\n';
                 } else if (def.type === 'enum' && def.values !== undefined) {
                     if (Array.isArray(def.values)) {
-                        item.insertText = new vscode.SnippetString(
-                            key + delimiter + ' ${1|' + def.values.join(',') + '|},'
-                        );
+                        if (enabled) {
+                            item.insertText = new vscode.SnippetString(
+                                key + delimiter + ' ${1|' + def.values.join(',') + '|},'
+                            );
+                        }
 
                         /* Build values documentation. */
                         let d = '### Values:';
@@ -181,39 +190,54 @@ export abstract class Scope {
                         keys.sort((a, b) => a.localeCompare(b));
 
                         let d = '### Values:';
-                        let s = ' ${1|';
-                        for (const nkey of keys) {
-                            const value = def.values[nkey];
-                            s += `${nkey} /* ${value} */,`;
-                            d += `\n- ${value}: ${nkey}`;
+                        if (enabled) {
+                            let s = ' ${1|';
+                            for (const nkey of keys) {
+                                const value = def.values[nkey];
+                                s += `${nkey} /* ${value} */,`;
+                                d += `\n- ${value}: ${nkey}`;
+                            }
+                            s = s.substring(0, s.length - 1);
+                            item.insertText = new vscode.SnippetString(key + delimiter + s + '|},');
+                        } else {
+                            for (const nkey of keys) {
+                                const value = def.values[nkey];
+                                d += `\n- ${value}: ${nkey}`;
+                            }
                         }
-                        s = s.substring(0, s.length - 1);
                         desc += d;
-
-                        item.insertText = new vscode.SnippetString(key + delimiter + s + '|},');
                     }
                 } else if (def.type === 'float') {
-                    item.insertText = new vscode.SnippetString(key + delimiter + ' ${1|1.0|},');
+                    if (enabled) {
+                        item.insertText = new vscode.SnippetString(key + delimiter + ' ${1|1.0|},');
+                    }
                 } else if (def.type === 'int') {
                     if (def.range !== undefined) {
-                        item.insertText = new vscode.SnippetString(
-                            key + delimiter + ' ${1|' + def.range.join(',') + '|},'
-                        );
-
+                        if (enabled) {
+                            item.insertText = new vscode.SnippetString(
+                                key + delimiter + ' ${1|' + def.range.join(',') + '|},'
+                            );
+                        }
                         desc += `${desc !== '' ? '\n\n' : ''} Range: ${def.range[0]} -> ${def.range[1]}`;
                     } else {
-                        item.insertText = new vscode.SnippetString(key + delimiter + ' ${1|1|},');
+                        if (enabled) {
+                            item.insertText = new vscode.SnippetString(key + delimiter + ' ${1|1|},');
+                        }
                     }
                 } else if (def.type === 'lua') {
-                    if (def.luaPrefix !== undefined) {
-                        item.insertText = new vscode.SnippetString(
-                            key + delimiter + ' ${1|' + def.luaPrefix + '.' + toPascalCase(name!) + '|},'
-                        );
-                    } else {
-                        item.insertText = new vscode.SnippetString(key + delimiter + ' ${1||},');
+                    if (enabled) {
+                        if (def.luaPrefix !== undefined) {
+                            item.insertText = new vscode.SnippetString(
+                                key + delimiter + ' ${1|' + def.luaPrefix + '.' + toPascalCase(name!) + '|},'
+                            );
+                        } else {
+                            item.insertText = new vscode.SnippetString(key + delimiter + ' ${1||},');
+                        }
                     }
                 } else {
-                    item.insertText = new vscode.SnippetString(key + delimiter + ' $1,');
+                    if (enabled) {
+                        item.insertText = new vscode.SnippetString(key + delimiter + ' $1,');
+                    }
                 }
                 if (desc !== '') {
                     item.documentation = new vscode.MarkdownString(desc);
