@@ -64,19 +64,19 @@ export class ModuleScript {
     readonly __name: string;
 
     constructor(bag: ParseBag) {
-        this.__name = bag.next().value;
+        this.__name = bag.next().val;
 
         if (this.__name !== undefined && this.__name === '') {
             throw new Error(`Name is empty.`);
         }
 
-        if (bag.next().value !== '{') {
+        if (bag.next().val !== '{') {
             throw new ParseError(`Expected '{'`);
         }
 
         while (!bag.isEOF()) {
             const curr = bag.peek();
-            if (curr.value === '}') {
+            if (curr.val === '}') {
                 bag.next();
                 return;
             }
@@ -85,12 +85,12 @@ export class ModuleScript {
     }
 
     onImports(bag: ParseBag) {
-        if (bag.next().value !== '{') {
+        if (bag.next().val !== '{') {
             new ParseError(`Expected '{' near 'imports' for module '${this.__name}'.`);
         }
 
         while (!bag.isEOF()) {
-            const line = bag.next().value.trim().replace(/,/g, '');
+            const line = bag.next().val.trim().replace(/,/g, '');
 
             if (line === undefined) {
                 throw new ParseError(`Unexpected EOF near 'imports' for module '${this.__name}'.`);
@@ -107,21 +107,25 @@ export class ModuleScript {
     onParse(bag: ParseBag) {
         while (!bag.isEOF()) {
             const curr = bag.next();
-            switch (curr.value) {
-                case '}':
+            switch (curr.val) {
+                case '}': {
                     return;
-                case 'alarmclock':
+                }
+                case 'alarmclock': {
                     const alarmClock = new AlarmClockItem(bag);
                     this.items[alarmClock.__name!] = alarmClock;
                     break;
-                case 'animation':
+                }
+                case 'animation': {
                     const animation = new AnimationScript(bag);
                     this.animations[animation.__name!] = animation;
                     break;
-                case 'animationsmesh':
+                }
+                case 'animationsmesh': {
                     const animationsMesh = new AnimationsMeshScript(bag);
                     this.animationsMeshes[animationsMesh.__name!] = animationsMesh;
                     break;
+                }
                 case 'evolvedrecipe': {
                     const evolvedRecipe = new EvolvedRecipeScript(bag);
                     const name = evolvedRecipe.__name!;
@@ -129,29 +133,35 @@ export class ModuleScript {
                     this.evolvedRecipes[name].push(evolvedRecipe);
                     break;
                 }
-                case 'fixing':
+                case 'fixing': {
                     const fixing = new FixingScript(bag);
                     this.fixings[fixing.__name!] = fixing;
                     break;
-                case 'imports':
+                }
+                case 'imports': {
                     this.onImports(bag);
                     break;
-                case 'item':
+                }
+                case 'item': {
                     const item = ModuleScript.createItem(bag);
                     this.items[item.__name!] = item;
                     break;
-                case 'mannequin':
+                }
+                case 'mannequin': {
                     const mannequin = new MannequinScript(bag);
                     this.mannequins[mannequin.__name!] = mannequin;
                     break;
-                case 'model':
+                }
+                case 'model': {
                     const model = new ModelScript(bag);
                     this.models[model.__name!] = model;
                     break;
-                case 'multistagebuild':
+                }
+                case 'multistagebuild': {
                     const multiStageBuild = new MultiStageBuildScript(bag);
                     this.multiStageBuilds[multiStageBuild.__name!] = multiStageBuild;
                     break;
+                }
                 case 'recipe': {
                     const recipe = new RecipeScript(bag);
                     const name = recipe.__name!;
@@ -159,14 +169,16 @@ export class ModuleScript {
                     this.recipes[name].push(recipe);
                     break;
                 }
-                case 'sound':
+                case 'sound': {
                     const sound = new SoundScript(bag);
                     this.sounds[sound.__name!] = sound;
                     break;
-                case 'soundtimeline':
+                }
+                case 'soundtimeline': {
                     const soundTimeline = new SoundTimelineScript(bag);
                     this.soundTimelines[soundTimeline.__name!] = soundTimeline;
                     break;
+                }
                 case 'uniquerecipe': {
                     const recipe = new UniqueRecipeScript(bag);
                     const name = recipe.__name!;
@@ -174,20 +186,23 @@ export class ModuleScript {
                     this.uniqueRecipes[name].push(recipe);
                     break;
                 }
-                case 'vehicle':
+                case 'vehicle': {
                     const vehicle = new VehicleScript(bag);
                     this.vehicles[vehicle.__name!] = vehicle;
                     break;
-                case 'vehicleenginerpm':
+                }
+                case 'vehicleenginerpm': {
                     const vehicleEngineRPM = new VehicleEngineRPMScript(bag);
                     this.vehicleEngines[vehicleEngineRPM.__name!] = vehicleEngineRPM;
                     break;
-                case 'template vehicle':
+                }
+                case 'template vehicle': {
                     const vehicleTemplate = new VehicleTemplateScript(bag);
                     this.vehicleTemplates[vehicleTemplate.__name!] = vehicleTemplate;
                     break;
+                }
                 default:
-                    console.warn('Unknown Module category: ' + curr);
+                    console.warn('Unknown Module category: ' + curr.val + ', type:' + curr.type);
             }
         }
     }
@@ -272,7 +287,7 @@ export class ModuleScript {
         const offsetOrig = bag.offset;
 
         while (!bag.isEOF()) {
-            const token = bag.next().value.toLowerCase();
+            const token = bag.next().val.toLowerCase();
             if (token.startsWith('type')) {
                 type = token.split('=')[1];
                 break;

@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import { tokenize } from '../API';
 
-import { LexerOptions, LexerToken } from '../Lexer';
+import { LexerToken } from '../Lexer';
 import { ModuleScript } from './Module';
 import { SandBoxScript } from './sandbox/SandBoxOption';
 import { ScriptString } from './Script';
@@ -132,13 +132,13 @@ export class ZedScript {
 
         while (!bag.isEOF()) {
             const curr = bag.next();
-            const val = curr.value;
+            const val = curr.val;
             if (val === 'module') {
                 const module = new ModuleScript(bag);
                 zedScript.modules[module.__name] = module;
             } else if (val === 'version') {
                 bag.next();
-                version = zedScript._version = bag.next().value;
+                version = zedScript._version = bag.next().val;
             } else if (val === 'option') {
                 const option = new SandBoxScript(bag);
                 zedScript.options[option.__name!] = option;
@@ -152,7 +152,7 @@ export class ZedScript {
         return zedScript;
     }
 
-    static fromScript(path: string, options: LexerOptions): ZedScript {
+    static fromScript(path: string): ZedScript {
         let type: ZedScriptType = 'module';
         if (path.toLowerCase().indexOf('sandbox-options.txt') !== -1) {
             type = 'sandbox';
@@ -160,7 +160,7 @@ export class ZedScript {
 
         const zedScript = new ZedScript(type);
 
-        const tokens = tokenize(path, options).tokens as LexerToken[];
+        const tokens = tokenize(path);
         // .map((o) => {
         // return typeof o === 'string' ? o : o.value;
         // });
@@ -170,13 +170,13 @@ export class ZedScript {
 
         while (!bag.isEOF()) {
             const curr = bag.next();
-            const val = curr.value;
+            const val = curr.val;
             if (val === 'module') {
                 const module = new ModuleScript(bag);
                 zedScript.modules[module.__name] = module;
             } else if (val === 'version') {
                 bag.next();
-                version = zedScript._version = bag.next().value;
+                version = zedScript._version = bag.next().val;
             } else if (val === 'option') {
                 const option = new SandBoxScript(bag);
                 zedScript.options[option.__name!] = option;

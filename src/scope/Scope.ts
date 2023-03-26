@@ -320,7 +320,7 @@ export abstract class Scope {
 export function getTokenAt(
     document: vscode.TextDocument,
     position: vscode.Position,
-    tokens = tokenize(document.getText(), { comments: false, location: true }).tokens as LexerToken[]
+    tokens = tokenize(document.getText())
 ): string {
     let i = 0;
     const row = position.line + 1;
@@ -333,13 +333,13 @@ export function getTokenAt(
         }
         i++;
     }
-    return tokens[i].value;
+    return tokens[i].val;
 }
 
 export function getScope(
     document: vscode.TextDocument,
     position: vscode.Position,
-    tokens = tokenize(document.getText(), { comments: false, location: true }).tokens as LexerToken[]
+    tokens = tokenize(document.getText())
 ): [ScriptScope, string?] {
     let i = 0;
     const row = position.line + 1;
@@ -355,7 +355,7 @@ export function getScope(
 
     for (; i >= 0; i--) {
         const token = tokens[i] as LexerToken;
-        if (token.value === '{') {
+        if (token.val === '{') {
             i--;
             break;
         }
@@ -365,16 +365,16 @@ export function getScope(
 
     if (i > -1) {
         let token = tokens[i];
-        let tVal = token.value.toLowerCase();
+        let tVal = token.val.toLowerCase();
         while (i > -1 && scope === 'root') {
             if (i < 0) break;
             token = tokens[--i];
-            tVal = token.value.toLowerCase();
+            tVal = token.val.toLowerCase();
             scope = Scopes.indexOf(tVal) !== -1 ? tVal : 'root';
         }
     }
 
-    const name = tokens[++i]?.value;
+    const name = tokens[++i]?.val;
     return [scope as ScriptScope, name];
 }
 

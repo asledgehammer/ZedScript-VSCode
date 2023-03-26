@@ -13,14 +13,9 @@ export function activate(context: vscode.ExtensionContext) {
                 const delAll = vscode.TextEdit.delete(
                     new vscode.Range(new vscode.Position(0, 0), document.positionAt(document.getText().length))
                 );
-                const t = tokenize(document.getText(), { comments: false, location: true });
-                // t.comments?.forEach((o) => {
-                //     (o as any).comment = true;
-                // });
-
-                // const tokens = mergeTokens(t.comments as LexerToken[], t.tokens as LexerToken[]);
-                const script = ZedScript.fromTokens(t.tokens as LexerToken[]);
-                const insert = vscode.TextEdit.insert(new vscode.Position(0, 0), script.toScript());
+                const t = tokenize(document.getText());
+                const script = ZedScript.fromTokens(t);
+                const insert = vscode.TextEdit.insert(new vscode.Position(0, 0), /* script.toScript() */ JSON.stringify(t, null, 4));
                 return [delAll, insert];
             } catch (err) {
                 console.error(err);
@@ -36,7 +31,7 @@ export function activate(context: vscode.ExtensionContext) {
                 if (!enabled) {
                     return;
                 }
-                const tokens = tokenize(document.getText(), { comments: true, location: true }).tokens as LexerToken[];
+                const tokens = tokenize(document.getText());
                 const token = getTokenAt(document, position, tokens);
                 const [scope, name] = getScope(document, position, tokens);
                 console.log({ scope, name, token });
@@ -55,7 +50,7 @@ export function activate(context: vscode.ExtensionContext) {
             __: vscode.CompletionContext
         ) {
             try {
-                const tokens = tokenize(document.getText(), { comments: true, location: true }).tokens as LexerToken[];
+                const tokens = tokenize(document.getText());
                 const phrase = document.lineAt(position.line).text.trim().toLowerCase();
                 const [scope, name] = getScope(document, position, tokens);
                 console.log({ scope, name });
@@ -97,16 +92,6 @@ export function hover(scope: ScriptScope, phrase: string): string {
     return '';
 }
 
-export function mergeTokens(src: LexerToken[], dest: LexerToken[]): LexerToken[] {
-    const tokens: LexerToken[] = [...src, ...dest];
-
-    tokens.sort((a, b) => {
-        return a.loc!.start.row - b.loc!.start.row;
-    });
-
-    return tokens;
-}
-
 export function format(tokens: LexerToken[]): string {
     let ss = '';
     let s = '';
@@ -126,7 +111,7 @@ export function format(tokens: LexerToken[]): string {
 
     for (let index = 0; index < tokens.length; index++) {
         const token = tokens[index];
-        if (token.value === '{') {
+        if (token.val === '{') {
             indent++;
             s += ` {`;
             line();
@@ -135,7 +120,7 @@ export function format(tokens: LexerToken[]): string {
                 moduleLine = false;
             }
             previousEndBracket = false;
-        } else if (token.value === '}') {
+        } else if (token.val === '}') {
             indent--;
             // Safety-Check
             if (indent < 0) indent = 0;
@@ -147,10 +132,10 @@ export function format(tokens: LexerToken[]): string {
         } else {
             previousEndBracket = false;
 
-            switch (token.value.toLowerCase().trim()) {
+            switch (token.val.toLowerCase().trim()) {
                 case 'item': {
                     prefix();
-                    s += 'item ' + tokens[++index].value;
+                    s += 'item ' + tokens[++index].val;
                     continue;
                 }
                 case 'imports': {
@@ -161,12 +146,12 @@ export function format(tokens: LexerToken[]): string {
                 case 'module': {
                     moduleLine = true;
                     prefix();
-                    s += 'module ' + tokens[++index].value;
+                    s += 'module ' + tokens[++index].val;
                     continue;
                 }
                 case 'recipe': {
                     prefix();
-                    s += 'recipe ' + tokens[++index].value;
+                    s += 'recipe ' + tokens[++index].val;
                     continue;
                 }
             }
@@ -174,12 +159,12 @@ export function format(tokens: LexerToken[]): string {
 
             // Add comments without modifying them.
             if ((token as any).comment) {
-                s += token.value;
+                s += token.val;
                 line();
                 continue;
             }
 
-            const property = removeWhitespace(token.value);
+            const property = removeWhitespace(token.val);
 
             let pRe = '';
             for (let index = 0; index < property.length; index++) {

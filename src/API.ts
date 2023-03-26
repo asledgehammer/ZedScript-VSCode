@@ -1,5 +1,5 @@
 /* eslint-disable no-inner-declarations */
-import { LexerBag, LexerOptions, LexerToken } from './Lexer';
+import { LexerBag, LexerToken } from './Lexer';
 
 function checkProperty(bag: LexerBag, property: string, categories: string[] | string, categoryGiven: string) {
     const catLower = categoryGiven.toLowerCase();
@@ -20,8 +20,7 @@ function stepInOpenBracket(bag: LexerBag): string {
         const start = bag.cursor();
         bag.next();
         const stop = bag.cursor();
-        const token: LexerToken = { value: '{' };
-        if (bag.options.location) token.loc = { start, stop };
+        const token: LexerToken = { type: 'scope_open', val: '{', loc: { start, stop } };
         bag.tokens.push(token);
         return '{';
     }
@@ -41,8 +40,7 @@ function stepInOpenBracket(bag: LexerBag): string {
         bag.error(`Unexpected ${value}. (Expected: '{', Given: '${value}')`);
     }
 
-    const token: LexerToken = { value };
-    if (bag.options.location) token.loc = { start, stop };
+    const token: LexerToken = { type: 'scope_open', val: value, loc: { start, stop } };
     bag.tokens.push(token);
 
     return '{';
@@ -54,14 +52,13 @@ function stepInObjectName(bag: LexerBag): string {
     if (value === '') bag.error('Name is empty.');
 
     // Preserve the '{' so the lexer doesn't break on inline-bracing.
-    if(value.indexOf('{') === value.length - 1) {
+    if (value.indexOf('{') === value.length - 1) {
         value = value.substring(0, value.length - 1).trim();
         bag.offset--;
     }
 
     const stop = bag.cursor(bag.offset - 1);
-    const token: LexerToken = { value };
-    if (bag.options.location) token.loc = { start, stop };
+    const token: LexerToken = { type: 'scope_name', val: value, loc: { start, stop } };
     bag.tokens.push(token);
     return value;
 }
@@ -81,10 +78,15 @@ function stepInProperty(
 
     if (property.indexOf(' ') !== -1) {
         const [cat, name] = property.split(' ');
-        bag.token(cat.toLowerCase(), bag.cursor(), bag.cursor(bag.offset - (property.length - cat.length)));
-        bag.token(name, bag.cursor(bag.offset - (property.length - cat.length) + 1), bag.cursor());
+        bag.token(
+            'scope_type',
+            cat.toLowerCase(),
+            bag.cursor(),
+            bag.cursor(bag.offset - (property.length - cat.length))
+        );
+        bag.token('scope_name', name, bag.cursor(bag.offset - (property.length - cat.length) + 1), bag.cursor());
     } else {
-        bag.token(propLower, bag.cursor(bag.offset - propLower.length), bag.cursor());
+        bag.token('scope_type', propLower, bag.cursor(bag.offset - propLower.length), bag.cursor());
     }
 
     stepInOpenBracket(bag);
@@ -98,9 +100,10 @@ function stepInProperty(
             bag.error(`Unexpected EOF in '${property}: ${module}.${definition}.${property}'`);
             return;
         } else if (line === '') {
+            bag.token('empty_line', '', start, stop);
             continue;
         } else if (line === '}') {
-            bag.token('}', bag.cursor(bag.offset - 1), bag.cursor());
+            bag.token('scope_close', '}', bag.cursor(bag.offset - 1), bag.cursor());
             break;
         }
 
@@ -111,7 +114,7 @@ function stepInProperty(
 
         let l = line.replace(/,/g, '');
         if (removeWhitespace) l = l.replace(/\s/g, '');
-        bag.token(l, start, stop);
+        bag.token('property', l, start, stop);
     }
 }
 
@@ -126,7 +129,7 @@ function stepInDefinition(
     removeWhitespace = true
 ) {
     const catLower = category.toLowerCase();
-    bag.token(catLower, bag.cursor(bag.offset - catLower.length), bag.cursor());
+    bag.token('scope_type', catLower, bag.cursor(bag.offset - catLower.length), bag.cursor());
     const name = stepInObjectName(bag);
     stepInOpenBracket(bag);
 
@@ -177,17 +180,18 @@ function stepInDefinition(
             bag.error(`EOF in ${category}: ${module}.${name}`);
             return;
         } else if (line === '') {
+            bag.token('empty_line', '', start, stop);
             continue;
         } else if (line === '}') {
-            bag.token('}', bag.cursor(bag.offset - 1), bag.cursor());
+            bag.token('scope_close', '}', bag.cursor(bag.offset - 1), bag.cursor());
             break;
         }
 
         if (line.indexOf(operator) !== -1) {
             if (removeWhitespace) {
-                bag.token(line.replace(/,/g, '').replace(/\s/g, ''), start, stop);
+                bag.token('property', line.replace(/,/g, '').replace(/\s/g, ''), start, stop);
             } else {
-                bag.token(line.replace(/,/g, '').trim(), start, stop);
+                bag.token('property', line.replace(/,/g, '').trim(), start, stop);
             }
             continue;
         } else if (line === ',') {
@@ -206,7 +210,7 @@ function stepInDefinition(
 
 function stepInRecipe(bag: LexerBag, module: string, category: string) {
     const catLower = category.toLowerCase();
-    bag.token(catLower, bag.cursor(bag.offset - catLower.length), bag.cursor());
+    bag.token('scope_type', catLower, bag.cursor(bag.offset - catLower.length), bag.cursor());
     const recipe = stepInObjectName(bag);
     stepInOpenBracket(bag);
 
@@ -220,18 +224,19 @@ function stepInRecipe(bag: LexerBag, module: string, category: string) {
             bag.error(`Unexpected EOF in '${module}.${recipe}'`);
             return;
         } else if (line === '') {
+            bag.token('empty_line', '', start, stop);
             continue;
         } else if (line === '}') {
-            bag.token('}', bag.cursor(bag.offset - 1), bag.cursor());
+            bag.token('scope_close', '}', bag.cursor(bag.offset - 1), bag.cursor());
             break;
         }
 
-        bag.token(line.replace(/,/g, '').replace(/\s/g, ''), start, stop);
+        bag.token('property', line.replace(/,/g, '').replace(/\s/g, ''), start, stop);
     }
 }
 
 function stepInImports(bag: LexerBag, module: string) {
-    bag.token('imports', bag.cursor(bag.offset - 'imports'.length), bag.cursor());
+    bag.token('scope_type', 'imports', bag.cursor(bag.offset - 'imports'.length), bag.cursor());
     stepInOpenBracket(bag);
     while (!bag.isEOF()) {
         const start = bag.cursor();
@@ -242,13 +247,14 @@ function stepInImports(bag: LexerBag, module: string) {
             bag.error(`Unexpected EOF in '${module}.Imports'`);
             return;
         } else if (line === '') {
+            bag.token('empty_line', '', start, stop);
             continue;
         } else if (line === '}') {
-            bag.token('}', bag.cursor(bag.offset - 1), bag.cursor());
+            bag.token('scope_close', '}', bag.cursor(bag.offset - 1), bag.cursor());
             break;
         }
 
-        bag.token(line, start, stop);
+        bag.token('value', line, start, stop);
     }
 }
 
@@ -272,7 +278,7 @@ function stepInModule(bag: LexerBag) {
         switch (wordLower) {
             /* (TERMINATOR) */
             case '}':
-                bag.token('}', bag.cursor(bag.offset - 1), bag.cursor());
+                bag.token('scope_close', '}', bag.cursor(bag.offset - 1), bag.cursor());
                 brk = true;
                 break;
             case '':
@@ -336,7 +342,7 @@ function stepInVersion(bag: LexerBag) {
         bag.error("Expected '=' in version declaration.");
     }
 
-    bag.token('=', bag.cursor(bag.offset - 2), bag.cursor(bag.offset - 1));
+    bag.token('delimiter', '=', bag.cursor(bag.offset - 2), bag.cursor(bag.offset - 1));
 
     let versionActual = bag.until([',', '\n']);
     if (versionActual === undefined) {
@@ -349,7 +355,7 @@ function stepInVersion(bag: LexerBag) {
         return;
     }
 
-    bag.token(versionActual, bag.cursor(bag.offset - versionActual.length), bag.cursor(bag.offset - 1));
+    bag.token('value', versionActual, bag.cursor(bag.offset - versionActual.length), bag.cursor(bag.offset - 1));
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -360,18 +366,18 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
     /* (Token the 'vehicle' or 'template vehicle') */
     if (isTemplate) {
         const iOffset = bag.offset - 'template vehicle'.length;
-        bag.token('template vehicle', bag.cursor(iOffset), bag.cursor());
+        bag.token('scope_type', 'template vehicle', bag.cursor(iOffset), bag.cursor());
         name = bag.until(['\n', '{'], true)!.split(' ')[1];
     } else {
         const iOffset = bag.offset - 'vehicle'.length;
-        bag.token('vehicle', bag.cursor(iOffset), bag.cursor());
+        bag.token('scope_type', 'vehicle', bag.cursor(iOffset), bag.cursor());
         name = bag.until(['\n', '{'], true)!.split(' ')[0];
     }
 
     /* (Tokenize the name & opening bracket) */
     const start = bag.cursor();
     const stop = bag.cursor(bag.offset - 1);
-    bag.token(name, start, stop);
+    bag.token('scope_name', name, start, stop);
     stepInOpenBracket(bag);
 
     /* (All named object constructors go here) */
@@ -435,13 +441,13 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
             return;
         } else if (line === '') continue;
         /* (End of object) */ else if (line === '}') {
-            bag.token('}', bag.cursor(bag.offset - 1), bag.cursor());
+            bag.token('scope_close', '}', bag.cursor(bag.offset - 1), bag.cursor());
             break;
         }
 
         /* (If the line is a classic 'property = value') */
         if (line.indexOf('=') !== -1) {
-            bag.token(line.replace(/,/g, '').trim(), start, stop);
+            bag.token('property', line.replace(/,/g, '').trim(), start, stop);
             continue;
         } else if (line === ',') continue;
 
@@ -457,8 +463,8 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
 
     function stepInArea(bag: LexerBag, parent: string, name: string) {
         const iOffset = bag.offset - `area ${name}`.length;
-        bag.token('area', bag.cursor(iOffset), bag.cursor());
-        bag.token(name, bag.cursor(bag.offset - (name.length + 1)), bag.cursor());
+        bag.token('scope_type', 'area', bag.cursor(iOffset), bag.cursor());
+        bag.token('scope_name', name, bag.cursor(bag.offset - (name.length + 1)), bag.cursor());
 
         stepInOpenBracket(bag);
 
@@ -473,13 +479,13 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 return;
             } else if (line === '') continue;
             /* (End of object) */ else if (line === '}') {
-                bag.token('}', bag.cursor(bag.offset - 1), bag.cursor());
+                bag.token('scope_close', '}', bag.cursor(bag.offset - 1), bag.cursor());
                 break;
             }
 
             /* (If the line is a classic 'property = value') */
             if (line.indexOf('=') !== -1) {
-                bag.token(line.replace(/,/g, '').trim(), start, stop);
+                bag.token('property', line.replace(/,/g, '').trim(), start, stop);
                 continue;
             } else if (line === ',') continue;
 
@@ -491,8 +497,8 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
     function stepInAttachment(bag: LexerBag, parent: string, name: string) {
         /* (Token the 'vehicle' or 'template vehicle') */
         const iOffset = bag.offset - `attachment ${name}`.length;
-        bag.token('attachment', bag.cursor(iOffset), bag.cursor());
-        bag.token(name, bag.cursor(bag.offset - (name.length + 1)), bag.cursor());
+        bag.token('scope_type', 'attachment', bag.cursor(iOffset), bag.cursor());
+        bag.token('scope_name', name, bag.cursor(bag.offset - (name.length + 1)), bag.cursor());
 
         stepInOpenBracket(bag);
 
@@ -507,13 +513,13 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 return;
             } else if (line === '') continue;
             /* (End of object) */ else if (line === '}') {
-                bag.token('}', bag.cursor(bag.offset - 1), bag.cursor());
+                bag.token('scope_close', '}', bag.cursor(bag.offset - 1), bag.cursor());
                 break;
             }
 
             /* (If the line is a classic 'property = value') */
             if (line.indexOf('=') !== -1) {
-                bag.token(line.replace(/,/g, '').trim(), start, stop);
+                bag.token('property', line.replace(/,/g, '').trim(), start, stop);
                 continue;
             } else if (line === ',') continue;
 
@@ -525,8 +531,8 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
     function stepInPart(bag: LexerBag, parent: string, name: string) {
         /* (Token the 'vehicle' or 'template vehicle') */
         const iOffset = bag.offset - `part ${name}`.length;
-        bag.token('part', bag.cursor(iOffset), bag.cursor());
-        bag.token(name, bag.cursor(bag.offset - (name.length + 1)), bag.cursor());
+        bag.token('scope_type', 'part', bag.cursor(iOffset), bag.cursor());
+        bag.token('scope_name', name, bag.cursor(bag.offset - (name.length + 1)), bag.cursor());
 
         stepInOpenBracket(bag);
 
@@ -588,13 +594,13 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 return;
             } else if (line === '') continue;
             /* (End of object) */ else if (line === '}') {
-                bag.token('}', bag.cursor(bag.offset - 1), bag.cursor());
+                bag.token('scope_close', '}', bag.cursor(bag.offset - 1), bag.cursor());
                 break;
             }
 
             /* (If the line is a classic 'property = value') */
             if (line.indexOf('=') !== -1) {
-                bag.token(line.replace(/,/g, '').trim(), start, stop);
+                bag.token('property', line.replace(/,/g, '').trim(), start, stop);
                 continue;
             } else if (line === ',') continue;
 
@@ -611,8 +617,8 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
 
     function stepInAnim(bag: LexerBag, parent: string, name: string) {
         const iOffset = bag.offset - `anim ${name}`.length;
-        bag.token('anim', bag.cursor(iOffset), bag.cursor(bag.offset - ` ${name}`.length));
-        bag.token(name, bag.cursor(bag.offset - ` ${name}`.length), bag.cursor());
+        bag.token('scope_type', 'anim', bag.cursor(iOffset), bag.cursor(bag.offset - ` ${name}`.length));
+        bag.token('scope_name', name, bag.cursor(bag.offset - ` ${name}`.length), bag.cursor());
 
         /* (Tokenize the name & opening bracket) */
         stepInOpenBracket(bag);
@@ -628,13 +634,13 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 return;
             } else if (line === '') continue;
             /* (End of object) */ else if (line === '}') {
-                bag.token('}', bag.cursor(bag.offset - 1), bag.cursor());
+                bag.token('scope_close', '}', bag.cursor(bag.offset - 1), bag.cursor());
                 break;
             }
 
             /* (If the line is a classic 'property = value') */
             if (line.indexOf('=') !== -1) {
-                bag.token(line.replace(/,/g, '').trim(), start, stop);
+                bag.token('property', line.replace(/,/g, '').trim(), start, stop);
                 continue;
             } else if (line === ',') continue;
 
@@ -644,7 +650,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
     }
     function stepInContainer(bag: LexerBag, parent: string) {
         const iOffset = bag.offset - `container`.length;
-        bag.token('container', bag.cursor(iOffset), bag.cursor());
+        bag.token('scope_type', 'container', bag.cursor(iOffset), bag.cursor());
 
         /* (Tokenize the name & opening bracket) */
         stepInOpenBracket(bag);
@@ -660,13 +666,13 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 return;
             } else if (line === '') continue;
             /* (End of object) */ else if (line === '}') {
-                bag.token('}', bag.cursor(bag.offset - 1), bag.cursor());
+                bag.token('scope_close', '}', bag.cursor(bag.offset - 1), bag.cursor());
                 break;
             }
 
             /* (If the line is a classic 'property = value') */
             if (line.indexOf('=') !== -1) {
-                bag.token(line.replace(/,/g, '').trim(), start, stop);
+                bag.token('property', line.replace(/,/g, '').trim(), start, stop);
                 continue;
             } else if (line === ',') continue;
 
@@ -677,7 +683,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
 
     function stepInDoor(bag: LexerBag, parent: string) {
         const iOffset = bag.offset - `door`.length;
-        bag.token('door', bag.cursor(iOffset), bag.cursor());
+        bag.token('scope_type', 'door', bag.cursor(iOffset), bag.cursor());
 
         /* (Tokenize the name & opening bracket) */
         stepInOpenBracket(bag);
@@ -693,13 +699,13 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 return;
             } else if (line === '') continue;
             /* (End of object) */ else if (line === '}') {
-                bag.token('}', bag.cursor(bag.offset - 1), bag.cursor());
+                bag.token('scope_close', '}', bag.cursor(bag.offset - 1), bag.cursor());
                 break;
             }
 
             /* (If the line is a classic 'property = value') */
             if (line.indexOf('=') !== -1) {
-                bag.token(line.replace(/,/g, '').trim(), start, stop);
+                bag.token('property', line.replace(/,/g, '').trim(), start, stop);
                 continue;
             } else if (line === ',') continue;
 
@@ -710,7 +716,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
 
     function stepInInstall(bag: LexerBag, parent: string) {
         const iOffset = bag.offset - `install`.length;
-        bag.token('install', bag.cursor(iOffset), bag.cursor());
+        bag.token('scope_type', 'install', bag.cursor(iOffset), bag.cursor());
 
         /* (Tokenize the name & opening bracket) */
         stepInOpenBracket(bag);
@@ -726,13 +732,13 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 return;
             } else if (line === '') continue;
             /* (End of object) */ else if (line === '}') {
-                bag.token('}', bag.cursor(bag.offset - 1), bag.cursor());
+                bag.token('scope_close', '}', bag.cursor(bag.offset - 1), bag.cursor());
                 break;
             }
 
             /* (If the line is a classic 'property = value') */
             if (line.indexOf('=') !== -1) {
-                bag.token(line.replace(/,/g, '').trim(), start, stop);
+                bag.token('property', line.replace(/,/g, '').trim(), start, stop);
                 continue;
             } else if (line === ',') continue;
 
@@ -743,7 +749,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
 
     function stepInLightbar(bag: LexerBag, parent: string) {
         const iOffset = bag.offset - `lightbar`.length;
-        bag.token('lightbar', bag.cursor(iOffset), bag.cursor());
+        bag.token('scope_type', 'lightbar', bag.cursor(iOffset), bag.cursor());
 
         /* (Tokenize the name & opening bracket) */
         stepInOpenBracket(bag);
@@ -759,13 +765,13 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 return;
             } else if (line === '') continue;
             /* (End of object) */ else if (line === '}') {
-                bag.token('}', bag.cursor(bag.offset - 1), bag.cursor());
+                bag.token('scope_close', '}', bag.cursor(bag.offset - 1), bag.cursor());
                 break;
             }
 
             /* (If the line is a classic 'property = value') */
             if (line.indexOf('=') !== -1) {
-                bag.token(line.replace(/,/g, '').trim(), start, stop);
+                bag.token('property', line.replace(/,/g, '').trim(), start, stop);
                 continue;
             } else if (line === ',') continue;
 
@@ -776,7 +782,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
 
     function stepInModel(bag: LexerBag, parent: string) {
         const iOffset = bag.offset - `model`.length;
-        bag.token('model', bag.cursor(iOffset), bag.cursor());
+        bag.token('scope_type', 'model', bag.cursor(iOffset), bag.cursor());
 
         /* (Tokenize the name & opening bracket) */
         stepInOpenBracket(bag);
@@ -792,13 +798,13 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 return;
             } else if (line === '') continue;
             /* (End of object) */ else if (line === '}') {
-                bag.token('}', bag.cursor(bag.offset - 1), bag.cursor());
+                bag.token('scope_close', '}', bag.cursor(bag.offset - 1), bag.cursor());
                 break;
             }
 
             /* (If the line is a classic 'property = value') */
             if (line.indexOf('=') !== -1) {
-                bag.token(line.replace(/,/g, '').trim(), start, stop);
+                bag.token('property', line.replace(/,/g, '').trim(), start, stop);
                 continue;
             } else if (line === ',') continue;
 
@@ -809,8 +815,8 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
 
     function stepInPartModel(bag: LexerBag, parent: string, name: string) {
         const iOffset = bag.offset - `model ${name}`.length;
-        bag.token('model', bag.cursor(iOffset), bag.cursor(bag.offset - ` ${name}`.length));
-        bag.token(name, bag.cursor(bag.offset - ` ${name}`.length), bag.cursor());
+        bag.token('scope_type', 'model', bag.cursor(iOffset), bag.cursor(bag.offset - ` ${name}`.length));
+        bag.token('scope_name', name, bag.cursor(bag.offset - ` ${name}`.length), bag.cursor());
 
         /* (Tokenize the name & opening bracket) */
         stepInOpenBracket(bag);
@@ -826,13 +832,13 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 return;
             } else if (line === '') continue;
             /* (End of object) */ else if (line === '}') {
-                bag.token('}', bag.cursor(bag.offset - 1), bag.cursor());
+                bag.token('scope_close', '}', bag.cursor(bag.offset - 1), bag.cursor());
                 break;
             }
 
             /* (If the line is a classic 'property = value') */
             if (line.indexOf('=') !== -1) {
-                bag.token(line.replace(/,/g, '').trim(), start, stop);
+                bag.token('property', line.replace(/,/g, '').trim(), start, stop);
                 continue;
             } else if (line === ',') continue;
 
@@ -843,8 +849,8 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
 
     function stepInPassenger(bag: LexerBag, parent: string, name: string) {
         const iOffset = bag.offset - `passenger ${name}`.length;
-        bag.token('passenger', bag.cursor(iOffset), bag.cursor(bag.offset - ` ${name}`.length));
-        bag.token(name, bag.cursor(bag.offset - ` ${name}`.length), bag.cursor());
+        bag.token('scope_type', 'passenger', bag.cursor(iOffset), bag.cursor(bag.offset - ` ${name}`.length));
+        bag.token('scope_name', name, bag.cursor(bag.offset - ` ${name}`.length), bag.cursor());
 
         /* (Tokenize the name & opening bracket) */
         stepInOpenBracket(bag);
@@ -892,13 +898,13 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 return;
             } else if (line === '') continue;
             /* (End of object) */ else if (line === '}') {
-                bag.token('}', bag.cursor(bag.offset - 1), bag.cursor());
+                bag.token('scope_close', '}', bag.cursor(bag.offset - 1), bag.cursor());
                 break;
             }
 
             /* (If the line is a classic 'property = value') */
             if (line.indexOf('=') !== -1) {
-                bag.token(line.replace(/,/g, '').trim(), start, stop);
+                bag.token('property', line.replace(/,/g, '').trim(), start, stop);
                 continue;
             } else if (line === ',') continue;
 
@@ -915,8 +921,8 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
 
     function stepInPosition(bag: LexerBag, parent: string, name: string) {
         const iOffset = bag.offset - `position ${name}`.length;
-        bag.token('position', bag.cursor(iOffset), bag.cursor(bag.offset - ` ${name}`.length));
-        bag.token(name, bag.cursor(bag.offset - ` ${name}`.length), bag.cursor());
+        bag.token('scope_type', 'position', bag.cursor(iOffset), bag.cursor(bag.offset - ` ${name}`.length));
+        bag.token('scope_name', name, bag.cursor(bag.offset - ` ${name}`.length), bag.cursor());
 
         /* (Tokenize the name & opening bracket) */
         stepInOpenBracket(bag);
@@ -932,13 +938,13 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 return;
             } else if (line === '') continue;
             /* (End of object) */ else if (line === '}') {
-                bag.token('}', bag.cursor(bag.offset - 1), bag.cursor());
+                bag.token('scope_close', '}', bag.cursor(bag.offset - 1), bag.cursor());
                 break;
             }
 
             /* (If the line is a classic 'property = value') */
             if (line.indexOf('=') !== -1) {
-                bag.token(line.replace(/,/g, '').trim(), start, stop);
+                bag.token('property', line.replace(/,/g, '').trim(), start, stop);
                 continue;
             } else if (line === ',') continue;
 
@@ -949,7 +955,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
 
     function stepInSkin(bag: LexerBag, parent: string) {
         const iOffset = bag.offset - `skin`.length;
-        bag.token('skin', bag.cursor(iOffset), bag.cursor());
+        bag.token('scope_type', 'skin', bag.cursor(iOffset), bag.cursor());
 
         /* (Tokenize the name & opening bracket) */
         stepInOpenBracket(bag);
@@ -965,13 +971,13 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 return;
             } else if (line === '') continue;
             /* (End of object) */ else if (line === '}') {
-                bag.token('}', bag.cursor(bag.offset - 1), bag.cursor());
+                bag.token('scope_close', '}', bag.cursor(bag.offset - 1), bag.cursor());
                 break;
             }
 
             /* (If the line is a classic 'property = value') */
             if (line.indexOf('=') !== -1) {
-                bag.token(line.replace(/,/g, '').trim(), start, stop);
+                bag.token('property', line.replace(/,/g, '').trim(), start, stop);
                 continue;
             } else if (line === ',') continue;
 
@@ -982,7 +988,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
 
     function stepInSound(bag: LexerBag, parent: string) {
         const iOffset = bag.offset - `sound`.length;
-        bag.token('sound', bag.cursor(iOffset), bag.cursor());
+        bag.token('scope_type', 'sound', bag.cursor(iOffset), bag.cursor());
 
         /* (Tokenize the name & opening bracket) */
         stepInOpenBracket(bag);
@@ -998,13 +1004,13 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 return;
             } else if (line === '') continue;
             /* (End of object) */ else if (line === '}') {
-                bag.token('}', bag.cursor(bag.offset - 1), bag.cursor());
+                bag.token('scope_close', '}', bag.cursor(bag.offset - 1), bag.cursor());
                 break;
             }
 
             /* (If the line is a classic 'property = value') */
             if (line.indexOf('=') !== -1) {
-                bag.token(line.replace(/,/g, '').trim(), start, stop);
+                bag.token('property', line.replace(/,/g, '').trim(), start, stop);
                 continue;
             } else if (line === ',') continue;
 
@@ -1015,8 +1021,8 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
 
     function stepInSwitchSeat(bag: LexerBag, parent: string, name: string) {
         const iOffset = bag.offset - `switchseat ${name}`.length;
-        bag.token('switchseat', bag.cursor(iOffset), bag.cursor(bag.offset - ` ${name}`.length));
-        bag.token(name, bag.cursor(bag.offset - ` ${name}`.length), bag.cursor());
+        bag.token('scope_type', 'switchseat', bag.cursor(iOffset), bag.cursor(bag.offset - ` ${name}`.length));
+        bag.token('scope_name', name, bag.cursor(bag.offset - ` ${name}`.length), bag.cursor());
 
         /* (Tokenize the name & opening bracket) */
         stepInOpenBracket(bag);
@@ -1032,13 +1038,13 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 return;
             } else if (line === '') continue;
             /* (End of object) */ else if (line === '}') {
-                bag.token('}', bag.cursor(bag.offset - 1), bag.cursor());
+                bag.token('scope_close', '}', bag.cursor(bag.offset - 1), bag.cursor());
                 break;
             }
 
             /* (If the line is a classic 'property = value') */
             if (line.indexOf('=') !== -1) {
-                bag.token(line.replace(/,/g, '').trim(), start, stop);
+                bag.token('property', line.replace(/,/g, '').trim(), start, stop);
                 continue;
             } else if (line === ',') continue;
 
@@ -1049,8 +1055,8 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
 
     function stepInTable(bag: LexerBag, parent: string, name: string) {
         const iOffset = bag.offset - `table ${name}`.length;
-        bag.token('table', bag.cursor(iOffset), bag.cursor(bag.offset - ` ${name}`.length));
-        bag.token(name, bag.cursor(bag.offset - ` ${name}`.length), bag.cursor());
+        bag.token('scope_type', 'table', bag.cursor(iOffset), bag.cursor(bag.offset - ` ${name}`.length));
+        bag.token('scope_name', name, bag.cursor(bag.offset - ` ${name}`.length), bag.cursor());
 
         /* (Tokenize the name & opening bracket) */
         stepInOpenBracket(bag);
@@ -1087,13 +1093,13 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 return;
             } else if (line === '') continue;
             /* (End of object) */ else if (line === '}') {
-                bag.token('}', bag.cursor(bag.offset - 1), bag.cursor());
+                bag.token('scope_close', '}', bag.cursor(bag.offset - 1), bag.cursor());
                 break;
             }
 
             /* (If the line is a classic 'property = value') */
             if (line.indexOf('=') !== -1) {
-                bag.token(line.replace(/,/g, '').trim(), start, stop);
+                bag.token('property', line.replace(/,/g, '').trim(), start, stop);
                 continue;
             } else if (line === ',') continue;
 
@@ -1111,7 +1117,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
     function stepInItems(bag: LexerBag, parent: string) {
         /* (Token the 'vehicle' or 'template vehicle') */
         const iOffset = bag.offset - 'items'.length;
-        bag.token('items', bag.cursor(iOffset), bag.cursor());
+        bag.token('scope_type', 'items', bag.cursor(iOffset), bag.cursor());
 
         /* (Tokenize the opening bracket) */
         stepInOpenBracket(bag);
@@ -1136,7 +1142,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
 
             // console.log({ itemsNoSpaceLine: line, index });
             /* (Array Token) */
-            bag.token(index, start, stop);
+            bag.token('scope_name', index, start, stop);
             stepInItem(bag, `${parent}.part`, index);
             return true;
         };
@@ -1152,13 +1158,13 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 return;
             } else if (line === '') continue;
             /* (End of object) */ else if (line === '}') {
-                bag.token('}', bag.cursor(bag.offset - 1), bag.cursor());
+                bag.token('scope_close', '}', bag.cursor(bag.offset - 1), bag.cursor());
                 break;
             }
 
             /* (If the line is a classic 'property = value') */
             if (line.indexOf('=') !== -1) {
-                bag.token(line.replace(/,/g, '').trim(), start, stop);
+                bag.token('property', line.replace(/,/g, '').trim(), start, stop);
                 continue;
             } else if (line === ',') continue;
 
@@ -1188,13 +1194,13 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 return;
             } else if (line === '') continue;
             /* (End of object) */ else if (line === '}') {
-                bag.token('}', bag.cursor(bag.offset - 1), bag.cursor());
+                bag.token('scope_close', '}', bag.cursor(bag.offset - 1), bag.cursor());
                 break;
             }
 
             /* (If the line is a classic 'property = value') */
             if (line.indexOf('=') !== -1) {
-                bag.token(line.replace(/,/g, '').trim(), start, stop);
+                bag.token('property', line.replace(/,/g, '').trim(), start, stop);
                 continue;
             } else if (line === ',') continue;
 
@@ -1205,7 +1211,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
 
     function stepInLua(bag: LexerBag, parent: string) {
         const iOffset = bag.offset - 'lua'.length;
-        bag.token('lua', bag.cursor(iOffset), bag.cursor());
+        bag.token('scope_type', 'lua', bag.cursor(iOffset), bag.cursor());
 
         /* (Tokenize the name & opening bracket) */
         stepInOpenBracket(bag);
@@ -1221,13 +1227,13 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 return;
             } else if (line === '') continue;
             /* (End of object) */ else if (line === '}') {
-                bag.token('}', bag.cursor(bag.offset - 1), bag.cursor());
+                bag.token('scope_close', '}', bag.cursor(bag.offset - 1), bag.cursor());
                 break;
             }
 
             /* (If the line is a classic 'property = value') */
             if (line.indexOf('=') !== -1) {
-                bag.token(line.replace(/,/g, '').trim(), start, stop);
+                bag.token('property', line.replace(/,/g, '').trim(), start, stop);
                 continue;
             } else if (line === ',') continue;
 
@@ -1238,8 +1244,8 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
 
     function stepInPhysics(bag: LexerBag, parent: string, name: string) {
         const iOffset = bag.offset - `physics ${name}`.length;
-        bag.token('physics', bag.cursor(iOffset), bag.cursor(bag.offset - ` ${name}`.length));
-        bag.token(name, bag.cursor(bag.offset - ` ${name}`.length), bag.cursor());
+        bag.token('scope_type', 'physics', bag.cursor(iOffset), bag.cursor(bag.offset - ` ${name}`.length));
+        bag.token('scope_name', name, bag.cursor(bag.offset - ` ${name}`.length), bag.cursor());
 
         /* (Tokenize the name & opening bracket) */
         stepInOpenBracket(bag);
@@ -1255,13 +1261,13 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 return;
             } else if (line === '') continue;
             /* (End of object) */ else if (line === '}') {
-                bag.token('}', bag.cursor(bag.offset - 1), bag.cursor());
+                bag.token('scope_close', '}', bag.cursor(bag.offset - 1), bag.cursor());
                 break;
             }
 
             /* (If the line is a classic 'property = value') */
             if (line.indexOf('=') !== -1) {
-                bag.token(line.replace(/,/g, '').trim(), start, stop);
+                bag.token('property', line.replace(/,/g, '').trim(), start, stop);
                 continue;
             } else if (line === ',') continue;
 
@@ -1278,7 +1284,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
 
     function stepInUninstall(bag: LexerBag, parent: string) {
         const iOffset = bag.offset - `uninstall`.length;
-        bag.token('uninstall', bag.cursor(iOffset), bag.cursor());
+        bag.token('scope_type', 'uninstall', bag.cursor(iOffset), bag.cursor());
 
         /* (Tokenize the name & opening bracket) */
         stepInOpenBracket(bag);
@@ -1294,13 +1300,13 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 return;
             } else if (line === '') continue;
             /* (End of object) */ else if (line === '}') {
-                bag.token('}', bag.cursor(bag.offset - 1), bag.cursor());
+                bag.token('scope_close', '}', bag.cursor(bag.offset - 1), bag.cursor());
                 break;
             }
 
             /* (If the line is a classic 'property = value') */
             if (line.indexOf('=') !== -1) {
-                bag.token(line.replace(/,/g, '').trim(), start, stop);
+                bag.token('property', line.replace(/,/g, '').trim(), start, stop);
                 continue;
             } else if (line === ',') continue;
 
@@ -1311,8 +1317,8 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
 
     function stepInWheel(bag: LexerBag, parent: string, name: string) {
         const iOffset = bag.offset - `wheel ${name}`.length;
-        bag.token('wheel', bag.cursor(iOffset), bag.cursor(bag.offset - ` ${name}`.length));
-        bag.token(name, bag.cursor(bag.offset - ` ${name}`.length), bag.cursor());
+        bag.token('scope_type', 'wheel', bag.cursor(iOffset), bag.cursor(bag.offset - ` ${name}`.length));
+        bag.token('scope_name', name, bag.cursor(bag.offset - ` ${name}`.length), bag.cursor());
 
         /* (Tokenize the name & opening bracket) */
         stepInOpenBracket(bag);
@@ -1328,13 +1334,13 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 return;
             } else if (line === '') continue;
             /* (End of object) */ else if (line === '}') {
-                bag.token('}', bag.cursor(bag.offset - 1), bag.cursor());
+                bag.token('scope_close', '}', bag.cursor(bag.offset - 1), bag.cursor());
                 break;
             }
 
             /* (If the line is a classic 'property = value') */
             if (line.indexOf('=') !== -1) {
-                bag.token(line.replace(/,/g, '').trim(), start, stop);
+                bag.token('property', line.replace(/,/g, '').trim(), start, stop);
                 continue;
             } else if (line === ',') continue;
 
@@ -1345,7 +1351,7 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
 
     function stepInWindow(bag: LexerBag, parent: string) {
         const iOffset = bag.offset - 'window'.length;
-        bag.token('window', bag.cursor(iOffset), bag.cursor());
+        bag.token('scope_type', 'window', bag.cursor(iOffset), bag.cursor());
 
         /* (Tokenize the name & opening bracket) */
         stepInOpenBracket(bag);
@@ -1361,13 +1367,13 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
                 return;
             } else if (line === '') continue;
             /* (End of object) */ else if (line === '}') {
-                bag.token('}', bag.cursor(bag.offset - 1), bag.cursor());
+                bag.token('scope_close', '}', bag.cursor(bag.offset - 1), bag.cursor());
                 break;
             }
 
             /* (If the line is a classic 'property = value') */
             if (line.indexOf('=') !== -1) {
-                bag.token(line.replace(/,/g, '').trim(), start, stop);
+                bag.token('property', line.replace(/,/g, '').trim(), start, stop);
                 continue;
             } else if (line === ',') continue;
 
@@ -1380,11 +1386,8 @@ function stepInVehicle(bag: LexerBag, module: string, isTemplate: boolean) {
 ////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////
 
-export const tokenize = (
-    path: string,
-    options: Partial<LexerOptions> = { location: false }
-): { tokens: LexerToken[] | string[]; comments?: LexerToken[] | string[] } => {
-    const bag = new LexerBag(path, options);
+export const tokenize = (path: string): LexerToken[] => {
+    const bag = new LexerBag(path);
 
     while (!bag.isEOF()) {
         const start = bag.cursor();
@@ -1396,14 +1399,14 @@ export const tokenize = (
         const wordLower = word.toLowerCase();
         switch (wordLower) {
             case 'module':
-                bag.token('module', start, stop);
+                bag.token('scope_type', 'module', start, stop);
                 stepInModule(bag);
                 break;
             case 'option':
                 stepInDefinition(bag, '[root]', 'option', '=', false);
                 break;
             case 'version':
-                bag.token('version', start, stop);
+                bag.token('key', 'version', start, stop);
                 stepInVersion(bag);
                 break;
             default:
@@ -1412,21 +1415,15 @@ export const tokenize = (
         }
     }
 
-    if (options.location) {
-        return {
-            tokens: bag.tokens,
-            comments: options?.comments ? bag.comments : undefined,
-        };
-    } else {
-        return {
-            tokens: bag.tokens.map((o) => {
-                return o.value;
-            }),
-            comments: options.comments
-                ? bag.comments.map((o) => {
-                      return o.value;
-                  })
-                : undefined,
-        };
-    }
+    return mergeTokens(bag.comments, bag.tokens);
 };
+
+export function mergeTokens(src: LexerToken[], dest: LexerToken[]): LexerToken[] {
+    const tokens: LexerToken[] = [...src, ...dest];
+
+    tokens.sort((a, b) => {
+        return a.loc!.start.row - b.loc!.start.row;
+    });
+
+    return tokens;
+}

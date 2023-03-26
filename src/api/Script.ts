@@ -50,7 +50,7 @@ export abstract class Script {
     readonly __operator: '=' | ':';
 
     constructor(bag: ParseBag, operator: '=' | ':', parseImmediately = true, noName = false) {
-        if (!noName) this.__name = bag.next().value;
+        if (!noName) this.__name = bag.next().val;
         this.__operator = operator;
         this.ignoreProperties['__operator'] = true;
 
@@ -58,7 +58,7 @@ export abstract class Script {
             throw new Error(`Name is empty.`);
         }
 
-        if (bag.next().value !== '{') {
+        if (bag.next().val !== '{') {
             throw new ParseError(`Expected '{'`);
         }
 
@@ -67,7 +67,7 @@ export abstract class Script {
 
     parse(bag: ParseBag) {
         while (!bag.isEOF()) {
-            const curr = bag.peek().value;
+            const curr = bag.peek().val;
             if (curr === '}') {
                 bag.next();
                 return;
@@ -77,7 +77,9 @@ export abstract class Script {
     }
 
     onParse(bag: ParseBag): void {
-        const curr = bag.next().value.trim();
+        const token = bag.next();
+        if(token.type !== 'property') return;
+        const curr = token.val.trim();
         if (curr.indexOf(this.__operator) !== -1) {
             const [property, value] = curr.split(this.__operator).map((o) => {
                 return o.trim();

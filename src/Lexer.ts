@@ -1,7 +1,18 @@
 export type LexerCursor = { row: number; column: number };
 export type LexerLocation = { start: LexerCursor; stop: LexerCursor };
-export type LexerToken = { value: string; loc?: LexerLocation };
-export type LexerOptions = { comments: boolean; location: boolean };
+export type LexerToken = { type: TokenType; val: string; loc: LexerLocation };
+export type TokenType =
+    | 'comment'
+    | 'comment_block'
+    | 'empty_line'
+    | 'scope_type'
+    | 'scope_name'
+    | 'scope_open'
+    | 'scope_close'
+    | 'key'
+    | 'delimiter'
+    | 'value'
+    | 'property';
 
 export class LexerError extends Error {
     /**
@@ -17,7 +28,6 @@ export class LexerBag {
     inCommentBlock = false;
     comments: LexerToken[] = [];
     tokens: LexerToken[] = [];
-    options: Partial<LexerOptions>;
     raw: string;
     offset = 0;
 
@@ -26,28 +36,27 @@ export class LexerBag {
     largestCursorOffset = 0;
     largestCursor: LexerCursor = { row: 1, column: 1 };
 
-    constructor(raw: string, options: Partial<LexerOptions>) {
+    constructor(raw: string) {
         this.raw = raw.replace(/\r/g, '');
-        this.options = options;
     }
 
-    token(value: string, start: LexerCursor, stop: LexerCursor): void {
-        this.tokens.push(this.options.location ? { value, loc: { start, stop } } : { value });
+    token(type: TokenType, value: string, start: LexerCursor, stop: LexerCursor): void {
+        this.tokens.push({ type, val: value, loc: { start, stop } });
     }
 
     isEOF(): boolean {
         return this.offset >= this.raw.length;
     }
 
-    commentLine() {
+    commentLine(): LexerToken {
         this.next();
         const start = this.cursor(this.offset - 2);
         const value = this.until(['\n'], true)!;
         const stop = this.cursor(this.offset - 1);
-        return { loc: { start, stop }, value: `//${value}` };
+        return { type: 'comment', loc: { start, stop }, val: `//${value}` };
     }
 
-    commentBlock() {
+    commentBlock(): LexerToken {
         this.inCommentBlock = true;
         this.next();
         const start = this.cursor(this.offset - 2);
@@ -66,15 +75,11 @@ export class LexerBag {
         }
         const stop = this.cursor();
         this.inCommentBlock = false;
-        return { loc: { start, stop }, value: `/*${value}*/` };
+        return { type: 'comment_block', loc: { start, stop }, val: `/*${value}*/` };
     }
 
-    cursor(o: number = this.offset, force = false): LexerCursor {
+    cursor(o: number = this.offset): LexerCursor {
         if (this.cursors[o] != null) return this.cursors[o];
-
-        if (!this.options.location && !force) {
-            return { row: -1, column: -1 };
-        }
 
         let i = o < this.largestCursorOffset ? 0 : this.largestCursorOffset;
         const c = o < this.largestCursorOffset ? { row: 1, column: 1 } : { ...this.largestCursor };
@@ -140,11 +145,11 @@ export class LexerBag {
         console.log(`[${cursor.row}:${cursor.column}] :: ${message}`);
     }
 
-    error(message: string, cursor: LexerCursor = this.cursor(this.offset, true)): void {
+    error(message: string, cursor: LexerCursor = this.cursor(this.offset)): void {
         throw new LexerError(cursor, message);
     }
 
-    warn(message: string, cursor: LexerCursor = this.cursor(this.offset, true)): void {
+    warn(message: string, cursor: LexerCursor = this.cursor(this.offset)): void {
         console.warn(`[ZedScriptParse][Lexer][${cursor.row}:${cursor.column}] :: ${message}`);
     }
 
