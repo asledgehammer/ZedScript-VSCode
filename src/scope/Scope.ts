@@ -116,7 +116,7 @@ export abstract class Scope {
                         }
                         desc += d;
                     }
-                } else if (def.type === 'int') {
+                } else if (def.type === 'float' || def.type === 'int') {
                     if (def.range !== undefined) {
                         desc += `${desc !== '' ? '\n\n' : ''} Range: ${def.range[0]} -> ${def.range[1]}`;
                     }
@@ -160,7 +160,7 @@ export abstract class Scope {
                 }
 
                 const item = new vscode.CompletionItem(key);
-                if(!enabled) {
+                if (!enabled) {
                     item.insertText = new vscode.SnippetString(key + delimiter + ' ${1},');
                 }
 
@@ -208,8 +208,17 @@ export abstract class Scope {
                         desc += d;
                     }
                 } else if (def.type === 'float') {
-                    if (enabled) {
-                        item.insertText = new vscode.SnippetString(key + delimiter + ' ${1|1.0|},');
+                    if (def.range !== undefined) {
+                        if (enabled) {
+                            item.insertText = new vscode.SnippetString(
+                                key + delimiter + ' ${1|' + def.range.join(',') + '|},'
+                            );
+                        }
+                        desc += `${desc !== '' ? '\n\n' : ''} Range: ${def.range[0]} -> ${def.range[1]}`;
+                    } else {
+                        if (enabled) {
+                            item.insertText = new vscode.SnippetString(key + delimiter + ' ${1|1.0|},');
+                        }
                     }
                 } else if (def.type === 'int') {
                     if (def.range !== undefined) {
