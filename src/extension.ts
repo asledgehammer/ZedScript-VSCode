@@ -1,12 +1,40 @@
 import * as vscode from 'vscode';
 import { tokenize } from './API';
+import { ParseBag } from './api/util/ParseBag';
 import { ZedScript } from './api/ZedScript';
+import { deserialize } from './format/Format';
 import { LexerToken } from './Lexer';
 import { ItemScope } from './scope/Item';
 import { RecipeScope } from './scope/Recipe';
 import { getScope, getTokenAt, ScriptScope } from './scope/Scope';
 
 export function activate(context: vscode.ExtensionContext) {
+    // DIAGNOSTICS
+    function createFix(document: vscode.TextDocument, range: vscode.Range, text: string): vscode.CodeAction {
+        const fix = new vscode.CodeAction(text, vscode.CodeActionKind.QuickFix);
+        fix.edit = new vscode.WorkspaceEdit();
+        fix.edit.replace(document.uri, range, text);
+        return fix;
+    }
+
+    // vscode.languages.registerCodeActionsProvider(
+    //     'zed',
+    //     {
+    //         provideCodeActions: function (
+    //             document: vscode.TextDocument,
+    //             range: vscode.Range | vscode.Selection,
+    //             context: vscode.CodeActionContext,
+    //             token: vscode.CancellationToken
+    //         ): vscode.ProviderResult<(vscode.CodeAction | vscode.Command)[]> {
+    //             const _range = new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 'module'.length));
+    //             const fix = createFix(document, _range, 'Hello, world!');
+    //             return [fix];
+    //         },
+    //     },
+    //     { providedCodeActionKinds: [vscode.CodeActionKind.QuickFix] }
+    // );
+
+    // FORMATTER
     vscode.languages.registerDocumentFormattingEditProvider('zed', {
         provideDocumentFormattingEdits(document: vscode.TextDocument): vscode.TextEdit[] {
             try {
@@ -14,8 +42,7 @@ export function activate(context: vscode.ExtensionContext) {
                     new vscode.Range(new vscode.Position(0, 0), document.positionAt(document.getText().length))
                 );
                 const t = tokenize(document.getText());
-                const script = ZedScript.fromTokens(t);
-                const insert = vscode.TextEdit.insert(new vscode.Position(0, 0), /* script.toScript() */ JSON.stringify(t, null, 4));
+                const insert = vscode.TextEdit.insert(new vscode.Position(0, 0), JSON.stringify(deserialize(t), null, 4));
                 return [delAll, insert];
             } catch (err) {
                 console.error(err);

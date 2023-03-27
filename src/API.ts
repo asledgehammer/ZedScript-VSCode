@@ -1415,6 +1415,8 @@ export const tokenize = (path: string): LexerToken[] => {
         }
     }
 
+    bag.audit();
+
     return mergeTokens(bag.comments, bag.tokens);
 };
 
@@ -1422,7 +1424,10 @@ export function mergeTokens(src: LexerToken[], dest: LexerToken[]): LexerToken[]
     const tokens: LexerToken[] = [...src, ...dest];
 
     tokens.sort((a, b) => {
-        return a.loc!.start.row - b.loc!.start.row;
+        if (a.loc.start.row === b.loc.start.row) {
+            return a.loc.start.column - b.loc.start.column;
+        }
+        return a.loc.start.row - b.loc.start.row;
     });
 
     return tokens;
