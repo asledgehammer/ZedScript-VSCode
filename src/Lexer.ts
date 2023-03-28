@@ -31,6 +31,9 @@ export class LexerBag {
 
     token(type: TokenType, value: string, start: TokenCursor, stop: TokenCursor): void {
         this.tokens.push({ type, val: value, loc: { start, stop } });
+        if (type === 'property') {
+            this.eol(',');
+        }
     }
 
     isEOF(): boolean {
@@ -93,14 +96,25 @@ export class LexerBag {
         return c;
     }
 
+    eol(val = '', tokens = this.tokens) {
+        const last = this.cursor();
+        tokens.push({
+            type: 'eol',
+            val,
+            loc: { start: last, stop: { row: last.row, column: last.column + 1 } },
+        });
+    }
+
     next(): string {
         let c = this.raw[this.offset++];
         if (!this.inCommentBlock) {
             if (c === '/' && this.peek() === '*') {
                 this.comments.push(this.commentBlock());
                 c = this.next();
+                if (c === '\n') this.eol('\n');
             } else if (c == '/' && this.peek() === '/') {
                 this.comments.push(this.commentLine());
+                this.eol('\n', this.comments);
                 c = this.next();
             }
         }
@@ -129,9 +143,7 @@ export class LexerBag {
     }
 
     audit() {
-
-
-        function auditToken(token: LexerToken) {
+        function auditToken(index: number, token: LexerToken) {
             const startRow = token.loc.start.row;
             const startCol = token.loc.start.column;
             const stopRow = token.loc.stop.row;
@@ -141,18 +153,18 @@ export class LexerBag {
             if (startRow === stopRow) {
                 const len = stopCol - startCol;
                 if (token.val.length !== len) {
-                    console.log("Resizing string: " + token.val);
+                    // console.log("Resizing string: " + token.val);
                     token.loc.stop = { row: startRow, column: startCol + token.val.length };
                 }
             }
         }
 
-        for (const token of this.comments) {
-            auditToken(token);
+        for (let index = 0; index < this.comments.length; index++) {
+            auditToken(index, this.comments[index]);
         }
 
-        for (const token of this.tokens) {
-            auditToken(token);
+        for (let index = 0; index < this.tokens.length; index++) {
+            auditToken(index, this.tokens[index]);
         }
     }
 
@@ -171,5 +183,15 @@ export class LexerBag {
 
     peek(offsetArg = 0): string | undefined {
         return this.raw[this.offset + offsetArg];
+    }
+
+    isEOL(tokens: LexerToken[], index: number): boolean {
+        const token = tokens[index];
+        const tokenNext = tokens[index + 1];
+        if (tokenNext === undefined) {
+            return true;
+        }
+
+        return tokenNext.loc.start.row > token.loc.start.row;
     }
 }

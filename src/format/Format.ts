@@ -13,6 +13,15 @@ export class FormatBag {
     tokens: Element[] = [];
     offset = 0;
 
+    format(prefix = ''): string {
+        let s = '';
+        const { tokens } = this;
+        for (const token of tokens) {
+            s += token.format(this, prefix);
+        }
+        return s;
+    }
+
     get length() {
         return this.tokens.length;
     }
@@ -63,13 +72,19 @@ export abstract class Element {
     constructor(type: TokenType) {
         this.type = type;
     }
+
+    abstract format(bag: FormatBag, prefix: string): string;
 }
 
 export class CommentToken extends Element {
     readonly raw: string;
     constructor(raw: string) {
         super('comment');
-        this.raw = raw;
+        this.raw = raw.trim();
+    }
+
+    format(bag: FormatBag, prefix = ''): string {
+        return `${prefix}${this.raw}`;
     }
 }
 
@@ -77,7 +92,11 @@ export class CommentBlockToken extends Element {
     readonly raw: string;
     constructor(raw: string) {
         super('comment_block');
-        this.raw = raw;
+        this.raw = raw.trim();
+    }
+
+    format(bag: FormatBag, prefix = ''): string {
+        return `${prefix}${this.raw}`;
     }
 }
 
@@ -85,12 +104,27 @@ export class EmptyLineToken extends Element {
     constructor() {
         super('empty_line');
     }
+    format(bag: FormatBag, prefix = ''): string {
+        return '\n';
+    }
+}
+
+export class EOLToken extends Element {
+    raw: string;
+
+    constructor(raw: string) {
+        super('eol');
+        this.raw = raw.trim();
+    }
+    format(bag: FormatBag, prefix = ''): string {
+        return `${this.raw}`;
+    }
 }
 
 export class PropertyToken extends Element {
     readonly raw: string;
     name?: string;
-    value: string;
+    values: string[];
     delimiter: ':' | '=' | '/' | null;
     constructor(raw: string) {
         super('property');
@@ -98,23 +132,50 @@ export class PropertyToken extends Element {
         this.raw = raw;
 
         /* The left-most key-value delimiter. */
+
         if (raw.indexOf(':') !== -1) {
+            /* NOTE: Put ':' first because properties using this delimiter can use '=' in their values. */
             this.delimiter = ':';
+        } else if (raw.indexOf('/') !== -1) {
+            /* NOTE: Put '/' second because properties using this delimiter can use '=' in their values. */
+            this.delimiter = '/';
         } else if (raw.indexOf('=') !== -1) {
             this.delimiter = '=';
-        } else if (raw.indexOf('/') !== -1) {
-            this.delimiter = '/';
         } else {
             this.delimiter = null;
             // throw new Error('Unknown delimiter for property: ' + raw);
         }
 
         if (this.delimiter != null) {
-            const delIndex = raw.indexOf(this.delimiter);
-            this.name = raw.substring(0, delIndex).trim();
-            this.value = raw.substring(delIndex + 1).trim();
+            if (this.delimiter === '/') {
+                this.values = raw.split('/').map((o) => {
+                    return o.trim();
+                });
+            } else {
+                const delIndex = raw.indexOf(this.delimiter);
+                this.name = raw.substring(0, delIndex).trim();
+                this.values = [raw.substring(delIndex + 1).trim()];
+            }
         } else {
-            this.value = raw.trim();
+            this.values = [raw.trim()];
+        }
+    }
+
+    format(bag: FormatBag, prefix = ''): string {
+        const { name } = this;
+        let delimiter: string = this.delimiter as string;
+
+        let join = ' / ';
+        if (delimiter === ':') {
+            delimiter = ': ';
+            join = ' ; ';
+        } else if (delimiter === '=') delimiter = ' = ';
+        const value = this.values.join(join);
+
+        if (this.name !== undefined) {
+            return `${prefix}${name}${delimiter}${value}`;
+        } else {
+            return `${prefix}${value}`;
         }
     }
 }
@@ -131,7 +192,7 @@ export class ValueToken<E> {
     }
 }
 
-export class StringValue extends ValueToken<string> {
+class StringValue extends ValueToken<string> {
     static TYPE: ValueType = 'string';
 
     constructor(value: string) {
@@ -139,20 +200,22 @@ export class StringValue extends ValueToken<string> {
     }
 }
 
-export class NumberValue extends ValueToken<string> {
-    static TYPE: ValueType = 'string';
+class NumberValue extends ValueToken<string> {
+    static TYPE: ValueType = 'number';
 
     constructor(value: string) {
-        super(StringValue.TYPE, value);
+        super(NumberValue.TYPE, value);
     }
 }
 
 export class Scope extends Element {
     name?: string;
+    scopeType: string;
     properties: Element[] = [];
 
-    constructor(name: string | undefined) {
+    constructor(scopeType: string, name: string | undefined) {
         super('scope');
+        this.scopeType = scopeType;
         this.name = name;
     }
 
@@ -174,7 +237,7 @@ export class Scope extends Element {
                     break;
                 }
                 case 'scope_type': {
-                    tokens.push(deserializeScope(inBag, outBag));
+                    tokens.push(deserializeScope(next.val, inBag, outBag));
                     break;
                 }
                 case 'comment': {
@@ -183,6 +246,10 @@ export class Scope extends Element {
                 }
                 case 'comment_block': {
                     tokens.push(new CommentToken(next.val));
+                    break;
+                }
+                case 'eol': {
+                    tokens.push(new EOLToken(next.val));
                     break;
                 }
                 case 'empty_line': {
@@ -195,6 +262,17 @@ export class Scope extends Element {
                     outBag.error(next.loc, `Unexpected token in scope:  '${next.type}' => '${next.val}'`);
             }
         }
+    }
+
+    format(bag: FormatBag, prefix = ''): string {
+        const prefixNew = prefix + ' '.repeat(4);
+        let s = `${prefix}${this.scopeType} ${this.name != null ? this.name : ''} {`;
+        const { properties } = this;
+        for (const property of properties) {
+            s += property.format(bag, prefixNew);
+        }
+        s += `${prefix}}\n\n`;
+        return s;
     }
 }
 
@@ -216,11 +294,17 @@ function deserializeKeyValue(next: LexerToken, inBag: ParseBag, outBag = new For
     return new PropertyToken(`${sKey}${sDelimiter}${sVal}`);
 }
 
-function deserializeScope(inBag: ParseBag, outBag = new FormatBag()): Scope {
+function deserializeScope(scopeType: string, inBag: ParseBag, outBag = new FormatBag()): Scope {
     let name = undefined;
     let next = inBag.next();
     if (next.type === 'scope_name') {
         name = next.val;
+        next = inBag.next();
+        if (next.type === 'eol') next = inBag.next();
+        if (next.type !== 'scope_open') {
+            throw inBag.error(next.loc, "Expected '{'.");
+        }
+    } else if (next.type === 'eol') {
         next = inBag.next();
         if (next.type !== 'scope_open') {
             throw inBag.error(next.loc, "Expected '{'.");
@@ -229,7 +313,7 @@ function deserializeScope(inBag: ParseBag, outBag = new FormatBag()): Scope {
         throw inBag.error(next.loc, "Expected '{'.");
     }
 
-    const scope = new Scope(name);
+    const scope = new Scope(scopeType, name);
     scope.deserialize(inBag, outBag);
     return scope;
 }
@@ -239,7 +323,7 @@ function _deserialize(inBag: ParseBag, outBag = new FormatBag()): FormatBag {
         const next = inBag.next();
         switch (next.type) {
             case 'scope_type': {
-                outBag.token(deserializeScope(inBag, outBag));
+                outBag.token(deserializeScope(next.val, inBag, outBag));
                 break;
             }
             case 'key': {
@@ -255,7 +339,11 @@ function _deserialize(inBag: ParseBag, outBag = new FormatBag()): FormatBag {
                 break;
             }
             case 'comment_block': {
-                outBag.token(new CommentToken(next.val));
+                outBag.token(new CommentBlockToken(next.val));
+                break;
+            }
+            case 'eol': {
+                outBag.token(new EOLToken(next.val));
                 break;
             }
             case 'empty_line': {
@@ -270,4 +358,8 @@ function _deserialize(inBag: ParseBag, outBag = new FormatBag()): FormatBag {
 
 export function deserialize(tokens: LexerToken[]): FormatBag {
     return _deserialize(new ParseBag(tokens));
+}
+
+export function format(tokens: LexerToken[]): string {
+    return _deserialize(new ParseBag(tokens)).format();
 }

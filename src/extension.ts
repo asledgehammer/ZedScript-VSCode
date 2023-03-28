@@ -1,8 +1,6 @@
 import * as vscode from 'vscode';
 import { tokenize } from './API';
-import { ParseBag } from './api/util/ParseBag';
-import { ZedScript } from './api/ZedScript';
-import { deserialize } from './format/Format';
+import { format } from './format/Format';
 import { LexerToken } from './Lexer';
 import { ItemScope } from './scope/Item';
 import { RecipeScope } from './scope/Recipe';
@@ -42,7 +40,9 @@ export function activate(context: vscode.ExtensionContext) {
                     new vscode.Range(new vscode.Position(0, 0), document.positionAt(document.getText().length))
                 );
                 const t = tokenize(document.getText());
-                const insert = vscode.TextEdit.insert(new vscode.Position(0, 0), JSON.stringify(deserialize(t), null, 4));
+                const f = format(t);
+                const insert = vscode.TextEdit.insert(new vscode.Position(0, 0), f);
+                // const insert = vscode.TextEdit.insert(new vscode.Position(0, 0), JSON.stringify(t, null, 4));
                 return [delAll, insert];
             } catch (err) {
                 console.error(err);
@@ -119,7 +119,7 @@ export function hover(scope: ScriptScope, phrase: string): string {
     return '';
 }
 
-export function format(tokens: LexerToken[]): string {
+export function oldFormat(tokens: LexerToken[]): string {
     let ss = '';
     let s = '';
     const indentWidth = 4;

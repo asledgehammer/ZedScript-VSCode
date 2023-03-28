@@ -1417,7 +1417,29 @@ export const tokenize = (path: string): LexerToken[] => {
 
     bag.audit();
 
-    return mergeTokens(bag.comments, bag.tokens);
+    // Detect EOL's.
+    const ourTokens = mergeTokens(bag.comments, bag.tokens);
+
+    // Shrink Empty Lines.
+    // const ourTokens3: LexerToken[] = [];
+    // for (let index = 0; index < ourTokens.length; index++) {
+    //     const token = ourTokens[index];
+    //     if (token.type === 'empty_line' || token.type === 'eol') {
+    //         const tokenPrev = ourTokens[index - 1];
+    //         if ((tokenPrev !== undefined && tokenPrev.type === 'empty_line') || tokenPrev.type === 'eol') {
+    //             const tokenPrevPrev = ourTokens[index - 2];
+    //             if (
+    //                 (tokenPrevPrev !== undefined && tokenPrevPrev.type === 'empty_line') ||
+    //                 tokenPrevPrev.type === 'eol'
+    //             ) {
+    //                 continue;
+    //             }
+    //         }
+    //     }
+    //     ourTokens3.push(token);
+    // }
+
+    return ourTokens;
 };
 
 export function mergeTokens(src: LexerToken[], dest: LexerToken[]): LexerToken[] {

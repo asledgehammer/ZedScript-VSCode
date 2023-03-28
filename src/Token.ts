@@ -4,6 +4,7 @@ export type TokenType =
     | 'comment'
     | 'comment_block'
     | 'empty_line'
+    | 'eol'
     | 'scope'
     | 'scope_type'
     | 'scope_name'
