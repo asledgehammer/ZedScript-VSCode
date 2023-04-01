@@ -74,8 +74,13 @@ export abstract class Scope {
     abstract delimiter: PropertyDelimiter;
     abstract properties: { [name: string]: Property };
 
-    onHover(phrase: string): string {
-        const { properties } = this;
+    getProperties(data?: any): { [name: string]: Property } {
+        return this.properties;
+    }
+
+    getDocumentation(phrase: string, data?: any): string {
+        console.log(`getDocumentation(${phrase})`);
+        const properties = this.getProperties(data);
         const delimiter: string = this.delimiter;
 
         phrase = phrase.toLowerCase();
@@ -125,11 +130,15 @@ export abstract class Scope {
                 return desc;
             }
         }
-        return '';
+        return 'No description.';
     }
 
-    onComplete(name: string | undefined, phrase: string): vscode.CompletionItem[] {
-        const { properties } = this;
+    onHover(phrase: string, data?: any): string {
+        return this.getDocumentation(phrase, data);
+    }
+
+    onComplete(name: string | undefined, phrase: string, data?: any): vscode.CompletionItem[] {
+        const properties = this.getProperties(data);
         let delimiter: string = this.delimiter;
 
         if (delimiter === '=') delimiter = ' =';
@@ -148,17 +157,6 @@ export abstract class Scope {
                     continue;
                 }
 
-                let desc = '';
-                if (def.description !== undefined) {
-                    desc += `${DESC}\n${outcase(def.description)}\n`;
-                }
-                if (def.example !== undefined) {
-                    desc += `${EXAMPLE}\n${CODE}zed\n${outcase(def.example)}\n${CODE}\n`;
-                }
-                if (def.luaExample !== undefined) {
-                    desc += `${EXAMPLE}\n${CODE}lua\n${outcase(def.luaExample)}\n${CODE}\n`;
-                }
-
                 const item = new vscode.CompletionItem(key);
                 if (!enabled) {
                     item.insertText = new vscode.SnippetString(key + delimiter + ' ${1},');
@@ -170,7 +168,6 @@ export abstract class Scope {
                             key + delimiter + ' ${1|' + BOOLEAN_VALUES.join(',') + '|},'
                         );
                     }
-                    desc += '### Values:\n- true\n- false\n';
                 } else if (def.type === 'enum' && def.values !== undefined) {
                     if (Array.isArray(def.values)) {
                         if (enabled) {
@@ -178,34 +175,19 @@ export abstract class Scope {
                                 key + delimiter + ' ${1|' + def.values.join(',') + '|},'
                             );
                         }
-
-                        /* Build values documentation. */
-                        let d = '### Values:';
-                        for (const value of def.values) {
-                            d += `\n- ${value}`;
-                        }
-                        desc += d;
                     } else {
                         const keys = Object.keys(def.values);
                         keys.sort((a, b) => a.localeCompare(b));
 
-                        let d = '### Values:';
                         if (enabled) {
                             let s = ' ${1|';
                             for (const nkey of keys) {
                                 const value = def.values[nkey];
                                 s += `${nkey} /* ${value} */,`;
-                                d += `\n- ${value}: ${nkey}`;
                             }
                             s = s.substring(0, s.length - 1);
                             item.insertText = new vscode.SnippetString(key + delimiter + s + '|},');
-                        } else {
-                            for (const nkey of keys) {
-                                const value = def.values[nkey];
-                                d += `\n- ${value}: ${nkey}`;
-                            }
                         }
-                        desc += d;
                     }
                 } else if (def.type === 'float') {
                     if (def.values !== undefined) {
@@ -251,7 +233,6 @@ export abstract class Scope {
                                     '|},'
                             );
                         }
-                        desc += `${desc !== '' ? '\n\n' : ''} Range: ${def.range[0]} -> ${def.range[1]}`;
                     } else {
                         if (enabled) {
                             item.insertText = new vscode.SnippetString(key + delimiter + ' ${1|1.0|},');
@@ -285,7 +266,6 @@ export abstract class Scope {
                                 key + delimiter + ' ${1|' + def.range.join(',') + '|},'
                             );
                         }
-                        desc += `${desc !== '' ? '\n\n' : ''} Range: ${def.range[0]} -> ${def.range[1]}`;
                     } else {
                         if (enabled) {
                             item.insertText = new vscode.SnippetString(key + delimiter + ' ${1|1|},');
@@ -306,9 +286,9 @@ export abstract class Scope {
                         item.insertText = new vscode.SnippetString(key + delimiter + ' $1,');
                     }
                 }
-                if (desc !== '') {
-                    item.documentation = new vscode.MarkdownString(desc);
-                }
+
+                const desc = this.getDocumentation(key, data);
+                item.documentation = new vscode.MarkdownString(desc);
 
                 toReturn.push(item);
             }
@@ -333,14 +313,14 @@ export function getTokenAt(
         }
         i++;
     }
-    return tokens[i].val;
+    return tokens[--i].val;
 }
 
 export function getScope(
     document: vscode.TextDocument,
     position: vscode.Position,
     tokens = tokenize(document.getText())
-): [ScriptScope, string?] {
+): [ScriptScope, string?, string?] {
     let i = 0;
     const row = position.line + 1;
     for (; i < tokens.length; i++) {
@@ -375,7 +355,20 @@ export function getScope(
     }
 
     const name = tokens[++i]?.val;
-    return [scope as ScriptScope, name];
+    let type = undefined;
+    if (scope === 'item') {
+        while (i < tokens.length - 1) {
+            const nextToken = tokens[i++].val.toLowerCase();
+            if (nextToken === '}') {
+                break;
+            } else if (nextToken.startsWith('type') && nextToken.indexOf('=') !== -1) {
+                type = nextToken.split('=')[1].trim();
+                break;
+            }
+        }
+    }
+
+    return [scope as ScriptScope, name, type];
 }
 
 export function toPascalCase(str: string): string {
@@ -410,7 +403,6 @@ export function outcase(str: string): string {
                 return false;
             }
         });
-
         // Shift each line back by one space.
         if (b) {
             split = split.map((line) => {

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { tokenize } from './API';
 import { format } from './format/Format';
 import { LexerToken } from './Lexer';
-import { ItemScope } from './scope/Item';
+import { ItemScope } from './scope/item/ItemScope';
 import { RecipeScope } from './scope/Recipe';
 import { getScope, getTokenAt, ScriptScope } from './scope/Scope';
 
@@ -60,9 +60,8 @@ export function activate(context: vscode.ExtensionContext) {
                 }
                 const tokens = tokenize(document.getText());
                 const token = getTokenAt(document, position, tokens);
-                const [scope, name] = getScope(document, position, tokens);
-                console.log({ scope, name, token });
-                return new vscode.Hover(new vscode.MarkdownString(hover(scope, token)));
+                const [scope, name, type] = getScope(document, position, tokens);
+                return new vscode.Hover(new vscode.MarkdownString(hover(scope, token, { type })));
             } catch (err) {
                 console.error(err);
             }
@@ -79,9 +78,8 @@ export function activate(context: vscode.ExtensionContext) {
             try {
                 const tokens = tokenize(document.getText());
                 const phrase = document.lineAt(position.line).text.trim().toLowerCase();
-                const [scope, name] = getScope(document, position, tokens);
-                console.log({ scope, name });
-                return complete(scope, name, phrase);
+                const [scope, name, type] = getScope(document, position, tokens);
+                return complete(scope, name, phrase, { type });
             } catch (err) {
                 console.error(err);
             }
@@ -99,22 +97,27 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(provider1, hover1);
 }
 
-export function complete(scope: ScriptScope, name: string | undefined, phrase: string): vscode.CompletionItem[] {
+export function complete(
+    scope: ScriptScope,
+    name: string | undefined,
+    phrase: string,
+    data?: any
+): vscode.CompletionItem[] {
     switch (scope) {
         case 'item':
-            return new ItemScope().onComplete(name, phrase);
+            return new ItemScope().onComplete(name, phrase, data);
         case 'recipe':
-            return new RecipeScope().onComplete(name, phrase);
+            return new RecipeScope().onComplete(name, phrase, data);
     }
     return [];
 }
 
-export function hover(scope: ScriptScope, phrase: string): string {
+export function hover(scope: ScriptScope, phrase: string, data?: any): string {
     switch (scope) {
         case 'item':
-            return new ItemScope().onHover(phrase);
+            return new ItemScope().onHover(phrase, data);
         case 'recipe':
-            return new RecipeScope().onHover(phrase);
+            return new RecipeScope().onHover(phrase, data);
     }
     return '';
 }

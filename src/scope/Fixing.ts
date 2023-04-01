@@ -1,12 +1,7 @@
-import * as vscode from 'vscode';
 import {
-    BOOLEAN_VALUES,
     Property as Property,
     PropertyDelimiter,
     Scope,
-    SKILL_LEVEL_VALUES,
-    SKILL_VALUES,
-    toPascalCase,
 } from './Scope';
 
 /**
