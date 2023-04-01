@@ -1,8 +1,8 @@
-import { Property } from '../Scope';
-import { ItemTypeScope } from './ItemTypeScope';
+import { ScopeProperty } from '../Scope';
+import { ScopeProperties } from '../ScopeProperties';
 
-export class WeaponPart implements ItemTypeScope {
-    properties: { [name: string]: Property } = {
+export class WeaponPart implements ScopeProperties {
+    properties: { [name: string]: ScopeProperty } = {
         Example: {
             type: 'int',
             description: `

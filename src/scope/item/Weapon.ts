@@ -1,8 +1,8 @@
-import { Property } from '../Scope';
-import { ItemTypeScope } from './ItemTypeScope';
+import { ScopeProperty } from '../Scope';
+import { ScopeProperties } from '../ScopeProperties';
 
-export class Weapon implements ItemTypeScope {
-    properties: { [name: string]: Property } = {
+export class Weapon implements ScopeProperties {
+    properties: { [name: string]: ScopeProperty } = {
         AimingPerkCritModifier: {
             type: 'int',
             description: `

@@ -12,7 +12,7 @@ export type ScriptScope = 'root' | 'module' | 'recipe' | 'item';
 export const Scopes = ['root', 'module', 'recipe', 'item'];
 
 export type ValueType = 'boolean' | 'float' | 'int' | 'string' | 'enum' | 'lua';
-export type Property = {
+export type ScopeProperty = {
     /** The type of property. */
     type: ValueType;
 
@@ -72,9 +72,9 @@ export type PropertyDelimiter = ':' | '=';
 
 export abstract class Scope {
     abstract delimiter: PropertyDelimiter;
-    abstract properties: { [name: string]: Property };
+    abstract properties: { [name: string]: ScopeProperty };
 
-    getProperties(data?: any): { [name: string]: Property } {
+    getProperties(data?: any): { [name: string]: ScopeProperty } {
         return this.properties;
     }
 

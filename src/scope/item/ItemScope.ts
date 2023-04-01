@@ -1,4 +1,4 @@
-import { Property, PropertyDelimiter, Scope } from '../Scope';
+import { ScopeProperty, PropertyDelimiter, Scope } from '../Scope';
 import { AlarmClock } from './AlarmClock';
 import { AlarmClockClothing } from './AlarmClockClothing';
 import { Clothing } from './Clothing';
@@ -50,7 +50,7 @@ export type ItemType =
     | 'Weapon'
     | 'WeaponPart';
 
-export const ITEM_PROPS: { [type: string]: { [name: string]: Property } } = {
+export const ITEM_PROPS: { [type: string]: { [name: string]: ScopeProperty } } = {
     alarmclock: new AlarmClock().properties,
     alarmclockclothing: new AlarmClockClothing().properties,
     clothing: new Clothing().properties,
@@ -78,9 +78,9 @@ export const ITEM_PROPS: { [type: string]: { [name: string]: Property } } = {
  */
 export class ItemScope extends Scope {
     delimiter: PropertyDelimiter = '=';
-    properties: { [name: string]: Property } = {};
+    properties: { [name: string]: ScopeProperty } = {};
 
-    override getProperties(data?: any): { [name: string]: Property } {
+    override getProperties(data?: any): { [name: string]: ScopeProperty } {
         if (data != null && data.type != null && ITEM_PROPS[data.type] != null) {
             return { ...ITEM_PROPS['normal'], ...ITEM_PROPS[data.type] };
         }

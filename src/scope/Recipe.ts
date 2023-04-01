@@ -4,7 +4,7 @@ import {
     DESC,
     EXAMPLE,
     outcase,
-    Property as Property,
+    ScopeProperty as ScopeProperty,
     PropertyDelimiter,
     Scope,
     SKILL_LEVEL_VALUES,
@@ -21,7 +21,7 @@ import {
  */
 export class RecipeScope extends Scope {
     delimiter: PropertyDelimiter = ':';
-    properties: { [name: string]: Property } = {
+    properties: { [name: string]: ScopeProperty } = {
         AllowDestroyedItem: {
             type: 'boolean',
             description: 'If the parameter is true, then allows the use of broken items as a resource.',

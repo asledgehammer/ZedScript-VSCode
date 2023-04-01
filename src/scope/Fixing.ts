@@ -1,5 +1,5 @@
 import {
-    Property as Property,
+    ScopeProperty as ScopeProperty,
     PropertyDelimiter,
     Scope,
 } from './Scope';
@@ -14,7 +14,7 @@ import {
  */
 export class FixingScope extends Scope {
     delimiter: PropertyDelimiter = ':';
-    properties: { [name: string]: Property } = {
+    properties: { [name: string]: ScopeProperty } = {
         Alcoholic: { type: 'boolean' }
     };
 }

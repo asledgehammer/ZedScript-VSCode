@@ -1,9 +1,9 @@
-import { HEAD, Property } from '../Scope';
+import { HEAD, ScopeProperty } from '../Scope';
 import { ITEM_TYPES } from './ItemScope';
-import { ItemTypeScope } from './ItemTypeScope';
+import { ScopeProperties } from '../ScopeProperties';
 
-export class Normal implements ItemTypeScope {
-    properties: { [name: string]: Property } = {
+export class Normal implements ScopeProperties {
+    properties: { [name: string]: ScopeProperty } = {
         Alcoholic: {
             type: 'boolean',
             description: `
