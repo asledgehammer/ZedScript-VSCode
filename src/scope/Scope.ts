@@ -341,6 +341,35 @@ export function getScope(
 
     for (; i >= 0; i--) {
         const token = tokens[i] as LexerToken;
+
+        if (token.val === '}') {
+
+            // The value to keep track of how far we are in a nested scope.
+            let inset = 0;
+
+            // Skip over scopes that the cursor is not inside.
+            while (i > -1) {
+                const next = tokens[i--].val;
+
+                // If we come across nested irrelevant scopes, keep track.
+                if (next === '{') {
+                    inset--;
+                } else if (next === '}') {
+                    inset++;
+                }
+
+                // We are completely outside of the irrelevant scope.
+                if (inset === 0) {
+                    break;
+                }
+            }
+
+            // At this point, a module isn't defined.
+            if (i === -1) {
+                return ['root', undefined, undefined];
+            }
+        }
+
         if (token.val === '{') {
             i--;
             break;
