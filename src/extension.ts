@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { tokenize } from './API';
 import { format } from './format/Format';
 import { LexerToken } from './Lexer';
+import { AnimationScope } from './scope/Animation';
 import { ItemScope } from './scope/item/ItemScope';
 import { ModuleScope } from './scope/Module';
 import { RecipeScope } from './scope/Recipe';
@@ -80,8 +81,8 @@ export function activate(context: vscode.ExtensionContext) {
                 const tokens = tokenize(document.getText());
                 const phrase = document.lineAt(position.line).text.trim().toLowerCase();
                 const [scope, name, type] = getScope(document, position, tokens);
-                
-                console.log({scope, name, type, phrase});
+
+                console.log({ scope, name, type, phrase });
                 return complete(scope, name, phrase, { type });
             } catch (err) {
                 console.error(err);
@@ -107,6 +108,8 @@ export function complete(
     data?: any
 ): vscode.CompletionItem[] {
     switch (scope) {
+        case 'animation':
+            return new AnimationScope().onComplete(name, phrase, data);
         case 'item':
             return new ItemScope().onComplete(name, phrase, data);
         case 'module':
@@ -119,8 +122,12 @@ export function complete(
 
 export function hover(scope: ScriptScope, phrase: string, data?: any): string {
     switch (scope) {
+        case 'animation':
+            return new AnimationScope().onHover(phrase, data);
         case 'item':
             return new ItemScope().onHover(phrase, data);
+        case 'module':
+            return new ModuleScope().onHover(phrase, data);
         case 'recipe':
             return new RecipeScope().onHover(phrase, data);
     }

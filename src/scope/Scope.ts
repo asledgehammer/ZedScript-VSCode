@@ -8,10 +8,10 @@ export const DESC = `${HEAD} Description:`;
 export const EXAMPLE = `${HEAD} Example:`;
 export const LUA_EXAMPLE = `${HEAD} Lua Example:`;
 
-export type ScriptScope = 'root' | 'module' | 'recipe' | 'item';
-export const Scopes = ['root', 'module', 'recipe', 'item'];
+export type ScriptScope = 'root' | 'module' | 'animation' | 'evolvedrecipe' | 'recipe' | 'item';
+export const Scopes = ['root', 'module', 'animation', 'evolvedrecipe', 'item', 'recipe'];
 
-export type ValueType = 'boolean' | 'float' | 'int' | 'string' | 'enum' | 'lua';
+export type ValueType = 'scope' | 'boolean' | 'float' | 'int' | 'string' | 'enum' | 'lua';
 export type ScopeProperty = {
     /** The type of property. */
     type: ValueType;
@@ -36,6 +36,9 @@ export type ScopeProperty = {
     luaExample?: string;
 
     deprecated?: boolean;
+
+    /** Set to true for scope properties that requires a name. */
+    scopeName?: boolean;
 };
 
 export const BOOLEAN_VALUES = ['true', 'false'];
@@ -168,7 +171,13 @@ export abstract class Scope {
                     item.insertText = new vscode.SnippetString(key + delimiter + ' ${1},');
                 }
 
-                if (def.type === 'boolean') {
+                if (def.type === 'scope') {
+                    if (def.scopeName) {
+                        item.insertText = new vscode.SnippetString(key + ' ${1:Name} {\n    ${2}\n}');
+                    } else {
+                        item.insertText = new vscode.SnippetString(key + ' {\n    ${1}\n}');
+                    }
+                } else if (def.type === 'boolean') {
                     if (enabled) {
                         item.insertText = new vscode.SnippetString(
                             key + delimiter + ' ${1|' + BOOLEAN_VALUES.join(',') + '|},'
@@ -343,7 +352,6 @@ export function getScope(
         const token = tokens[i] as LexerToken;
 
         if (token.val === '}') {
-
             // The value to keep track of how far we are in a nested scope.
             let inset = 0;
 
