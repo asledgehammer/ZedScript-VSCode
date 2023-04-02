@@ -3,6 +3,7 @@ import { tokenize } from './API';
 import { format } from './format/Format';
 import { LexerToken } from './Lexer';
 import { ItemScope } from './scope/item/ItemScope';
+import { ModuleScope } from './scope/Module';
 import { RecipeScope } from './scope/Recipe';
 import { getScope, getTokenAt, ScriptScope } from './scope/Scope';
 
@@ -79,6 +80,8 @@ export function activate(context: vscode.ExtensionContext) {
                 const tokens = tokenize(document.getText());
                 const phrase = document.lineAt(position.line).text.trim().toLowerCase();
                 const [scope, name, type] = getScope(document, position, tokens);
+                
+                console.log({scope, name, type, phrase});
                 return complete(scope, name, phrase, { type });
             } catch (err) {
                 console.error(err);
@@ -106,6 +109,8 @@ export function complete(
     switch (scope) {
         case 'item':
             return new ItemScope().onComplete(name, phrase, data);
+        case 'module':
+            return new ModuleScope().onComplete(name, phrase, data);
         case 'recipe':
             return new RecipeScope().onComplete(name, phrase, data);
     }
