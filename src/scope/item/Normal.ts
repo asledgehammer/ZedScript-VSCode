@@ -158,6 +158,10 @@ export class Normal implements ScopeProperties {
                 `,
             example: 'ItemWhenDry = Base.BathTowel,',
         },
+        KnockdownMod: {
+            type: 'int',
+            deprecated: true
+        },
         MaxAmmo: {
             type: 'int',
             description: `
@@ -279,6 +283,11 @@ export class Normal implements ScopeProperties {
                     hand.
                 `,
             example: 'SecondaryAnimMask = HoldingTorchLeft,',
+        },
+        StaticModel: {
+            type: 'string',
+            description: 'Used to display the item in hands.',
+            example: 'StaticModel = Book,'
         },
         SurvivalGear: {
             type: 'boolean',

@@ -34,6 +34,8 @@ export type ScopeProperty = {
     example?: string;
 
     luaExample?: string;
+
+    deprecated?: boolean;
 };
 
 export const BOOLEAN_VALUES = ['true', 'false'];
@@ -90,6 +92,10 @@ export abstract class Scope {
                 const def = properties[key];
 
                 let desc = '';
+                if (def.deprecated) {
+                    desc += '### DEPRECATED\n\n';
+                }
+
                 if (def.description !== undefined) {
                     desc += `${DESC}\n${outcase(def.description)}\n`;
                 }
