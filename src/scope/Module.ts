@@ -44,6 +44,29 @@ export class ModuleScope {
             );
             items.push(item);
         }
+        if ('animationsmesh'.indexOf(phraseLower) !== -1) {
+            const snippet = outcase(
+                `
+                animationsmesh $\{1} {
+                    MeshFile = $\{2},
+                    AnimationDirectory = $\{3},
+                }
+            `.substring(1)
+            );
+
+            const item = new vscode.CompletionItem('animationsmesh');
+            item.insertText = new vscode.SnippetString(snippet);
+            item.documentation = new vscode.MarkdownString(
+                outcase(`
+                TODO: Document.
+
+                ### Sources:
+                - [PZWiki](https://pzwiki.net/wiki/Scripts_guide/)
+                - [Zomboid Modding Guide](https://github.com/FWolfe/Zomboid-Modding-Guide/blob/master/scripts/README.md)
+            `)
+            );
+            items.push(item);
+        }
         if ('evolvedrecipe'.indexOf(phraseLower) !== -1) {
             const snippet = outcase(
                 `
@@ -117,6 +140,28 @@ export class ModuleScope {
                     ### Sources:
                     - [PZWiki](https://pzwiki.net/wiki/Scripts_guide/Evolved_Recipe_Script_Guide)
                     - [Zomboid Modding Guide](https://github.com/FWolfe/Zomboid-Modding-Guide/blob/master/scripts/README.md#the-evolvedrecipe-block)
+            `)
+            );
+            items.push(item);
+        }
+        if ('fixing'.indexOf(phraseLower) !== -1) {
+            const snippet = outcase(
+                `
+                fixing $\{1} {
+                    $\{2}
+                }
+            `.substring(1)
+            );
+
+            const item = new vscode.CompletionItem('fixing');
+            item.insertText = new vscode.SnippetString(snippet);
+            item.documentation = new vscode.MarkdownString(
+                outcase(`
+                Fixing blocks are used to fix items in PZ.
+
+                ### Sources:
+                - [PZWiki](https://pzwiki.net/wiki/Scripts_guide/Fixing_Script_Guide)
+                - [Zomboid Modding Guide](https://github.com/FWolfe/Zomboid-Modding-Guide/blob/master/scripts/README.md#the-fixing-block)
             `)
             );
             items.push(item);

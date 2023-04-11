@@ -3,6 +3,7 @@ import { tokenize } from './API';
 import { format } from './format/Format';
 import { LexerToken } from './Lexer';
 import { AnimationScope } from './scope/Animation';
+import { AnimationsMeshScope } from './scope/AnimationsMesh';
 import { ItemScope } from './scope/item/ItemScope';
 import { ModuleScope } from './scope/Module';
 import { RecipeScope } from './scope/Recipe';
@@ -110,6 +111,8 @@ export function complete(
     switch (scope) {
         case 'animation':
             return new AnimationScope().onComplete(name, phrase, data);
+        case 'animationsmesh':
+            return new AnimationsMeshScope().onComplete(name, phrase, data);
         case 'item':
             return new ItemScope().onComplete(name, phrase, data);
         case 'module':
@@ -124,6 +127,8 @@ export function hover(scope: ScriptScope, phrase: string, data?: any): string {
     switch (scope) {
         case 'animation':
             return new AnimationScope().onHover(phrase, data);
+        case 'animationsmesh':
+            return new AnimationsMeshScope().onHover(phrase, data);
         case 'item':
             return new ItemScope().onHover(phrase, data);
         case 'module':

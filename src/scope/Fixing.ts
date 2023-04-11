@@ -15,6 +15,6 @@ import {
 export class FixingScope extends Scope {
     delimiter: PropertyDelimiter = ':';
     properties: { [name: string]: ScopeProperty } = {
-        Alcoholic: { type: 'boolean' }
+        
     };
 }

@@ -9,10 +9,8 @@ import {
  *
  * @author Jab
  */
-export class AnimationScope extends Scope {
+export class AnimationsMeshScope extends Scope {
     delimiter: PropertyDelimiter = '=';
     properties: { [name: string]: ScopeProperty } = {
-        CopyFrame: { type: 'scope', scopeName: false },
-        CopyFrames: { type: 'scope', scopeName: false },
     };
 }

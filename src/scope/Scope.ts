@@ -8,8 +8,8 @@ export const DESC = `${HEAD} Description:`;
 export const EXAMPLE = `${HEAD} Example:`;
 export const LUA_EXAMPLE = `${HEAD} Lua Example:`;
 
-export type ScriptScope = 'root' | 'module' | 'animation' | 'evolvedrecipe' | 'recipe' | 'item';
-export const Scopes = ['root', 'module', 'animation', 'evolvedrecipe', 'item', 'recipe'];
+export type ScriptScope = 'root' | 'module' | 'animation' | 'animationsmesh' | 'evolvedrecipe' | 'recipe' | 'item';
+export const Scopes = ['root', 'module', 'animation', 'animationsmesh', 'evolvedrecipe', 'item', 'recipe'];
 
 export type ValueType = 'scope' | 'boolean' | 'float' | 'int' | 'string' | 'enum' | 'lua';
 export type ScopeProperty = {
