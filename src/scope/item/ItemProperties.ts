@@ -584,6 +584,12 @@ export const properties: { [name: string]: ItemProperty } = {
         description: 'Specifies whether an item can have holes.',
         example: 'CanHaveHoles = false,',
     },
+    ClothingItem: {
+        itemTypes: ['Clothing', 'Container'],
+        type: 'string',
+        description: 'Specifies the .xml name of the clothing element script.',
+        example: 'ClothingItem = Bag_SurvivorBag,',
+    },
     StressChange: {
         itemTypes: ['Food', 'Literature'],
         type: 'int',
@@ -652,12 +658,6 @@ export const properties: { [name: string]: ItemProperty } = {
             default.
         `,
         example: 'ClothingExtraSubmenu = ForwardCap,',
-    },
-    ClothingItem: {
-        itemTypes: ['Clothing'],
-        type: 'string',
-        description: 'Specifies the .xml name of the clothing element script.',
-        example: 'ClothingItem = Bag_SurvivorBag,',
     },
     ClothingItemExtra: {
         itemTypes: ['Clothing'],
@@ -804,6 +804,75 @@ export const properties: { [name: string]: ItemProperty } = {
             All locations are located here: \`media/lua/shared/NPCs/BodyLocations.lua\`
         `,
         example: 'CanBeEquipped = FannyPackFront,',
+    },
+    Capacity: {
+        itemTypes: ['Container'],
+        type: 'int',
+        description: 'The inventory capacity of the container.',
+        example: 'Capacity = 22,',
+    },
+    CloseSound: {
+        itemTypes: ['Container'],
+        type: 'string',
+        description: 'The sound that is played when the container is closed.',
+        example: 'CloseSound = CloseBag,',
+    },
+    OnlyAcceptCategory: {
+        itemTypes: ['Container'],
+        type: 'enum',
+        values: ITEM_TYPES,
+        example: 'Determines what category of items can be put into the container.',
+    },
+    OpenSound: {
+        itemTypes: ['Container'],
+        type: 'string',
+        description: 'The sound that will be played when the container is opened.',
+        example: 'OpenSound = OpenBag,',
+    },
+    PutInSound: {
+        itemTypes: ['Container'],
+        type: 'string',
+        deprecated: true,
+    },
+    ReplaceInPrimaryHand: {
+        itemTypes: ['Container'],
+        type: 'string',
+        description: 'The model that replaces the main hand item with a certain animation.',
+        example: 'ReplaceInPrimaryHand = Bag_PistolCase_RHand holdingbagright,',
+    },
+    ReplaceInSecondHand: {
+        itemTypes: ['Container'],
+        type: 'string',
+        description: 'The model that replaces the second hand item with a specific animation.',
+        example: 'ReplaceInSecondHand = Bag_PistolCase_LHand holdingbagleft,',
+    },
+    RunSpeedModifier: {
+        itemTypes: ['Container'],
+        type: 'float',
+        description: `
+            Affects the player's running speed.
+
+            (NOTE: This option only works on backpacks and containers that are worn or carried)
+        `,
+        example: '',
+    },
+    // TODO: Implement as enum.
+    SoundParameter: {
+        itemTypes: ['Container'],
+        type: 'string',
+        description: `
+            A modifier that affects the noise from the container when it is equipped. 
+            First parameter is EquippedBaggageContainer, second parameter is: (Values: None, HikingBag, DuffleBag, PlasticBag, SchoolBag, ToteBag, GarbageBag)
+        `,
+        example: 'SoundParameter = EquippedBaggageContainer HikingBag,',
+    },
+    WeightReduction: {
+        itemTypes: ['Container'],
+        type: 'int',
+        description: `
+            The parameter sets a modifier for reducing the perceived weight of items that are in this ItemContainer.
+        `,
+        example: 'WeightReduction = 30,',
     },
 
     /** DRAINABLE **********************************************************************/
