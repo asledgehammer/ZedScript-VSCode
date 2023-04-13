@@ -150,6 +150,11 @@ const MAKE_UP_VALUES: string[] = ['FullFace', 'Eyes', 'EyesShadow', 'Lips'];
 
 export const properties: { [name: string]: ItemProperty } = {
     /** NORMAL *************************************************************************/
+    AlwaysWelcomeGift: {
+        itemTypes: ['Normal'],
+        type: 'boolean',
+        deprecated: true,
+    },
 
     Alcoholic: {
         itemTypes: ['Normal'],
@@ -569,6 +574,12 @@ export const properties: { [name: string]: ItemProperty } = {
 
     /* NON-NORMAL COMBO ****************************************************************/
 
+    AlarmSound: {
+        itemTypes: ['AlarmClock', 'AlarmClockClothing', 'Clothing'],
+        type: 'string',
+        description: 'Sets the alarm sound.',
+        example: 'AlarmSound = WatchAlarmLoop,',
+    },
     BoredomChange: {
         itemTypes: ['Food', 'Literature'],
         type: 'int',
@@ -609,32 +620,30 @@ export const properties: { [name: string]: ItemProperty } = {
         example: 'UnhappyChange = -10,',
     },
 
-    /* ALARMCLOCK **********************************************************************/
-
     /* CLOTHING & ALARMCLOCKCLOTHING ***************************************************/
 
     AttachmentsProvided: {
-        itemTypes: ['Clothing'],
+        itemTypes: ['AlarmClockClothing', 'Clothing'],
         type: 'enum',
         values: ATTACHMENTS_VALUES,
         description: 'Sets the equipment slots the item occupies. (Multiple entries are possible)',
         example: 'AttachmentsProvided = HolsterLeft; HolsterRight,',
     },
     BiteDefense: {
-        itemTypes: ['Clothing'],
+        itemTypes: ['AlarmClockClothing', 'Clothing'],
         type: 'int',
         description: 'Specifies the bite protection modifier.',
         example: 'BiteDefense = 20,',
     },
     BloodLocation: {
-        itemTypes: ['Clothing'],
+        itemTypes: ['AlarmClockClothing', 'Clothing'],
         type: 'enum',
         values: BLOOD_CLOTHING_TYPE_VALUES,
         description: 'Specifies the zones where blood will be displayed on this item of clothing.',
         example: 'BloodLocation = FullHelmet; Neck,',
     },
     BodyLocation: {
-        itemTypes: ['Clothing'],
+        itemTypes: ['AlarmClockClothing', 'Clothing'],
         type: 'enum',
         values: BODY_LOCATION_VALUES,
         description: `
@@ -645,13 +654,13 @@ export const properties: { [name: string]: ItemProperty } = {
         example: 'BodyLocation = Hat,',
     },
     ChanceToFall: {
-        itemTypes: ['Clothing'],
+        itemTypes: ['AlarmClockClothing', 'Clothing'],
         type: 'int',
         description: 'Chance modifier for clothing item to drop.',
         example: 'ChanceToFall = 60,',
     },
     ClothingExtraSubmenu: {
-        itemTypes: ['Clothing'],
+        itemTypes: ['AlarmClockClothing', 'Clothing'],
         type: 'string',
         description: `
             The parameter specifies an additional option for the context menu of how the item can be equipped by
@@ -660,7 +669,7 @@ export const properties: { [name: string]: ItemProperty } = {
         example: 'ClothingExtraSubmenu = ForwardCap,',
     },
     ClothingItemExtra: {
-        itemTypes: ['Clothing'],
+        itemTypes: ['AlarmClockClothing', 'Clothing'],
         type: 'string',
         description: `
             Indicates an additional option of how the item can be worn.
@@ -668,7 +677,7 @@ export const properties: { [name: string]: ItemProperty } = {
         example: 'ClothingItemExtra = Hat_BaseballCap_Reverse,',
     },
     ClothingItemExtraOption: {
-        itemTypes: ['Clothing'],
+        itemTypes: ['AlarmClockClothing', 'Clothing'],
         type: 'string',
         description: `
             Specifies an option for the context menu for the ClothingItemExtra parameter.
@@ -676,13 +685,13 @@ export const properties: { [name: string]: ItemProperty } = {
         example: 'ClothingItemExtraOption = ReverseCap,',
     },
     CombatSpeedModifier: {
-        itemTypes: ['Clothing'],
+        itemTypes: ['AlarmClockClothing', 'Clothing'],
         type: 'float',
         description: 'Affects weapon attack speed.',
         example: 'CombatSpeedModifier = 0.9,',
     },
     Cosmetic: {
-        itemTypes: ['Clothing'],
+        itemTypes: ['AlarmClockClothing', 'Clothing'],
         type: 'boolean',
         description: `
             If true, the item will not render a 3D model.
@@ -692,14 +701,14 @@ export const properties: { [name: string]: ItemProperty } = {
         example: 'Cosmetic = true,',
     },
     FabricType: {
-        itemTypes: ['Clothing'],
+        itemTypes: ['AlarmClockClothing', 'Clothing'],
         type: 'enum',
         values: FABRIC_TYPE_VALUES,
         description: 'Specifies the material from which the clothes is made.',
         example: 'FabricType = Denim,',
     },
     IconsForTexture: {
-        itemTypes: ['Clothing'],
+        itemTypes: ['AlarmClockClothing', 'Clothing'],
         type: 'string',
         description: `
             The names of the icons are specified, which in order correspond to the possible textures of the item.
@@ -709,13 +718,13 @@ export const properties: { [name: string]: ItemProperty } = {
         example: 'IconsForTexture = BandanaBlack; BandanaBlue; BandanaRed,',
     },
     Insulation: {
-        itemTypes: ['Clothing'],
+        itemTypes: ['AlarmClockClothing', 'Clothing'],
         type: 'float',
         description: 'Modifier for Insulation which is involved in determining cold protection.',
         example: 'Insulation = 0.75,',
     },
     NeckProtectionModifier: {
-        itemTypes: ['Clothing'],
+        itemTypes: ['AlarmClockClothing', 'Clothing'],
         type: 'float',
         range: [0.0, 1.0],
         description: `
@@ -724,19 +733,19 @@ export const properties: { [name: string]: ItemProperty } = {
         example: 'NeckProtectionModifier = 0.5,',
     },
     RemoveOnBroken: {
-        itemTypes: ['Clothing'],
+        itemTypes: ['AlarmClockClothing', 'Clothing'],
         type: 'boolean',
         description: 'Specifies whether to delete the item when the state becomes zero.',
         example: 'RemoveOnBroken = true,',
     },
     ScratchDefense: {
-        itemTypes: ['Clothing'],
+        itemTypes: ['AlarmClockClothing', 'Clothing'],
         type: 'int',
         description: 'Specifies the scratch protection modifier.',
         example: 'ScratchDefense = 30,',
     },
     StompPower: {
-        itemTypes: ['Clothing'],
+        itemTypes: ['AlarmClockClothing', 'Clothing'],
         type: 'float',
         description: `
             Used for shoes. This parameter specifies the damage modifier for a kick attack against a prone opponent.
@@ -744,13 +753,13 @@ export const properties: { [name: string]: ItemProperty } = {
         example: 'StompPower = 2.1,',
     },
     WaterResistance: {
-        itemTypes: ['Clothing'],
+        itemTypes: ['AlarmClockClothing', 'Clothing'],
         type: 'float',
         description: 'Modifier that is involved in determining the protection against moisture.',
         example: 'WaterResistance = 0.45,',
     },
     WeightWet: {
-        itemTypes: ['Clothing'],
+        itemTypes: ['AlarmClockClothing', 'Clothing'],
         type: 'float',
         description: `
             Sets the weight when clothes are wet. 
@@ -760,13 +769,13 @@ export const properties: { [name: string]: ItemProperty } = {
         example: 'WeightWet = 1.5,',
     },
     WindResistance: {
-        itemTypes: ['Clothing'],
+        itemTypes: ['AlarmClockClothing', 'Clothing'],
         type: 'float',
         description: 'A modifier that is involved in determining wind protection.',
         example: 'WindResistance = 0.15,',
     },
     WorldRender: {
-        itemTypes: ['Clothing'],
+        itemTypes: ['AlarmClockClothing', 'Clothing'],
         type: 'boolean',
         description: 'If false, the item will NOT appear on the ground as a 3D item.',
         example: 'WorldRender = false,',
@@ -1327,6 +1336,19 @@ export const properties: { [name: string]: ItemProperty } = {
 
     /* KEY *****************************************************************************/
 
+    DigitalPadlock: {
+        itemTypes: ['Key'],
+        type: 'boolean',
+        description: 'Set item as digital padlock.',
+        example: 'DigitalPadlock = true,',
+    },
+    Padlock: {
+        itemTypes: ['Key'],
+        type: 'boolean',
+        description: 'Set item as padlock.',
+        example: 'Padlock = true,',
+    },
+
     /* KEYRING *************************************************************************/
 
     /* LITERATURE **********************************************************************/
@@ -1377,9 +1399,98 @@ export const properties: { [name: string]: ItemProperty } = {
 
     /* MAP *****************************************************************************/
 
+    Map: {
+        itemTypes: ['Map'],
+        type: 'string',
+        description: 'Specifies the map name to be used in the item.',
+        example: 'Map = LouisvilleMap3,',
+    },
+
     /* MOVEABLE ************************************************************************/
 
+    WorldObjectSprite: {
+        itemTypes: ['Moveable'],
+        type: 'string',
+        description: 'Specifies the tile that is used when placing the item on a tile.',
+        example: 'WorldObjectSprite = furniture_storage_02_8,',
+    },
+
     /* RADIO ***************************************************************************/
+
+    BaseVolumeRange: {
+        itemTypes: ['Radio'],
+        type: 'int',
+        description: 'A modifier that affects the base volume of the device.',
+        example: 'BaseVolumeRange = 12,',
+    },
+    DisappearOnUse: {
+        itemTypes: ['Radio'],
+        type: 'boolean',
+        description: 'If false, there will be no waste of using the item. (In normal use)',
+        example: 'DisappearOnUse = false,',
+    },
+    IsHighTier: {
+        itemTypes: ['Radio'],
+        type: 'boolean',
+        description: 'If true, the chance of the appearance of preset radio stations is higher.',
+        example: 'IsHighTier = false,',
+    },
+    IsPortable: {
+        itemTypes: ['Radio'],
+        type: 'boolean',
+        description: 'If true, the player can use the radio as a portable item.',
+        example: 'IsPortable = true,',
+    },
+    IsTelevision: {
+        itemTypes: ['Radio'],
+        type: 'boolean',
+        description: 'Determines if the item is a TV.',
+        example: 'IsTelevision = true,',
+    },
+    MaxChannel: {
+        itemTypes: ['Radio'],
+        type: 'int',
+        description: 'The maximum channel available for the radio.',
+        example: 'MaxChannel = 1000000,',
+    },
+    MicRange: {
+        itemTypes: ['Radio'],
+        type: 'int',
+        description: `The radius at which the item's microphone will pick up the player's voice.`,
+        example: 'MicRange = 5,',
+    },
+    MinChannel: {
+        itemTypes: ['Radio'],
+        type: 'int',
+        description: 'Minimum channel available for the radio.',
+        example: 'MinChannel = 200,',
+    },
+    NoTransmit: {
+        itemTypes: ['Radio'],
+        type: 'boolean',
+        description: 'Indicates that the radio is not transmitting or receiving a signal.',
+        example: 'NoTransmit = true,',
+    },
+    TransmitRange: {
+        itemTypes: ['Radio'],
+        type: 'int',
+        description: `The radio's range of reception and transmission of a signal.`,
+        example: 'TransmitRange = 7500,',
+    },
+    TwoWay: {
+        itemTypes: ['Radio'],
+        type: 'boolean',
+        description: `
+            If true, the item can receive and transmit signals. If false, the radio can only receive signals.
+        `,
+        example: 'TwoWay = true,',
+    },
+    UsesBattery: {
+        itemTypes: ['Radio'],
+        type: 'boolean',
+        description: 'Sets whether the item uses a battery.',
+        example: 'UsesBattery = true,',
+    },
 
     /* WEAPON **************************************************************************/
 
@@ -2124,4 +2235,67 @@ export const properties: { [name: string]: ItemProperty } = {
     },
 
     /* WEAPONPART **********************************************************************/
+
+    AimingTimeModifier: {
+        itemTypes: ['WeaponPart'],
+        type: 'int',
+        description: 'Modifier for the time it takes to aim a weapon. A positive number to speed up aiming speed.',
+        example: 'AimingTimeModifier = 5,',
+    },
+    AimingMod: {
+        itemTypes: ['WeaponPart'],
+        type: 'int',
+        deprecated: true,
+    },
+    HitChanceModifier: {
+        itemTypes: ['WeaponPart'],
+        type: 'int',
+        description: 'Modifier to hit the target (WeaponPart item). A positive number to increase the hit chance.',
+        example: 'HitChanceModifier = 8,',
+    },
+    MaxRangeModifier: {
+        itemTypes: ['WeaponPart'],
+        type: 'int',
+        description: 'Sets the maximum range modifier for the part.',
+        example: 'MaxRangeModifier = 7,',
+    },
+    MinRangeModifier: {
+        itemTypes: ['WeaponPart'],
+        type: 'int',
+        description: 'Sets the minimum range modifier for the part.',
+        example: 'MinRangeModifier = 7,',
+    },
+    MountOn: {
+        itemTypes: ['WeaponPart'],
+        type: 'string',
+        description: 'Indicates which weapon this item (Weapon part) can be applied to.',
+        example: 'MountOn = HuntingRifle; VarmintRifle; Shotgun,',
+    },
+    PartType: {
+        itemTypes: ['WeaponPart'],
+        type: 'string',
+        description: 'Specifies the type of weapon part.',
+        example: 'PartType = Scope,',
+    },
+    RecoilDelayModifier: {
+        itemTypes: ['WeaponPart'],
+        type: 'float',
+        description: 'Determines the recoil of the weapon. Affects the pause between shots.',
+        example: 'RecoilDelayModifier = -10.0,',
+    },
+    ReloadTimeModifier: {
+        itemTypes: ['WeaponPart'],
+        type: 'int',
+        description: 'Reload time modifier (WeaponPart item). Negative number to speed up reload time.',
+        example: 'ReloadTimeModifier = -5,',
+    },
+    WeightModifier: {
+        itemTypes: ['WeaponPart'],
+        type: 'float',
+        description: `
+            Determines how the weapon part affects the weight of the weapon. A positive number adds weight, a negative
+            number decreases it.
+        `,
+        example: 'WeightModifier = 0.5,',
+    },
 };
