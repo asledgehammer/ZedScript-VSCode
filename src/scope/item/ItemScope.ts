@@ -14,6 +14,32 @@ export class ItemScope extends Scope {
     properties: { [name: string]: ScopeProperty } = {};
 
     override getProperties(data?: any): { [name: string]: ScopeProperty } {
-        return properties;
+        const props: { [name: string]: ScopeProperty } = {};
+
+        const typeLower = data != null && data.type != null ? data.type.toLowerCase() : 'normal';
+        for (const key of Object.keys(properties)) {
+            const val = properties[key];
+
+            // if(val.deprecated) continue;
+            if (val.itemTypes.indexOf('Normal') !== -1) {
+                props[key] = val;
+                // console.log('Normal: ' + key);
+                continue;
+            }
+
+            let found = false;
+            for (const itemType of val.itemTypes) {
+                if (itemType.toLowerCase() === typeLower) {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) continue;
+
+            // console.log('Found: ' + key + " " + typeLower);
+            props[key] = val;
+        }
+        return props;
     }
 }

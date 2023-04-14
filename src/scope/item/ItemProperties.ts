@@ -149,12 +149,50 @@ const FABRIC_TYPE_VALUES = ['Cotton', 'Denim', 'Leather'];
 const MAKE_UP_VALUES: string[] = ['FullFace', 'Eyes', 'EyesShadow', 'Lips'];
 
 export const properties: { [name: string]: ItemProperty } = {
-    /** NORMAL *************************************************************************/
+    /** DEPRECATED *********************************************************************/
+
+    AimingMod: {
+        itemTypes: ['Normal'],
+        type: 'int',
+        deprecated: true,
+    },
     AlwaysWelcomeGift: {
         itemTypes: ['Normal'],
         type: 'boolean',
         deprecated: true,
     },
+    KnockdownMod: {
+        itemTypes: ['Normal'],
+        type: 'int',
+        deprecated: true,
+    },
+    MinimumSwingTime: {
+        itemTypes: ['Normal'],
+        type: 'int',
+        deprecated: true,
+    },
+    PutInSound: {
+        itemTypes: ['Normal'],
+        type: 'string',
+        deprecated: true,
+    },
+    SubCategory: {
+        itemTypes: ['Normal'],
+        type: 'string',
+        deprecated: true,
+    },
+    SwingAmountBeforeImpact: {
+        itemTypes: ['Normal'],
+        type: 'float',
+        deprecated: true,
+    },
+    SwingTime: {
+        itemTypes: ['Normal'],
+        type: 'int',
+        deprecated: true,
+    },
+
+    /** NORMAL *************************************************************************/
 
     Alcoholic: {
         itemTypes: ['Normal'],
@@ -331,11 +369,6 @@ export const properties: { [name: string]: ItemProperty } = {
                     The parameter specifies the item that the original item will be replaced with after drying.
                 `,
         example: 'ItemWhenDry = Base.BathTowel,',
-    },
-    KnockdownMod: {
-        itemTypes: ['Normal'],
-        type: 'int',
-        deprecated: true,
     },
     /** Note: I don't think this should be a normal property but apparently magazines uses this. */
     MaxAmmo: {
@@ -580,6 +613,17 @@ export const properties: { [name: string]: ItemProperty } = {
         description: 'Sets the alarm sound.',
         example: 'AlarmSound = WatchAlarmLoop,',
     },
+    AttachmentType: {
+        itemTypes: ['Radio', 'Weapon'],
+        type: 'string',
+        description: `
+            Specifies the type of place, where will be attached item.
+            
+            All attachments you can find in:
+            "media/lua/client/Hotbar/ISHotbarAttachDefinition.lua"
+        `,
+        example: 'AttachmentType = Rifle,',
+    },
     BoredomChange: {
         itemTypes: ['Food', 'Literature'],
         type: 'int',
@@ -619,6 +663,24 @@ export const properties: { [name: string]: ItemProperty } = {
         `,
         example: 'UnhappyChange = -10,',
     },
+    UseDelta: {
+        itemTypes: ['Drainable', 'Radio'],
+        type: 'float',
+        description: `Determines how much the Drainable item's value will be spent on a single use.`,
+        example: 'UseDelta = 0.16,',
+    },
+    UseWhileEquipped: {
+        itemTypes: ['Drainable', 'Radio'],
+        type: 'boolean',
+        description: `If true, the drainable item's charge is spent when activated and equipped.`,
+        example: 'UseWhileEquipped = false,',
+    },
+    WorldObjectSprite: {
+        itemTypes: ['Moveable', 'Radio'],
+        type: 'string',
+        description: 'Specifies the tile that is used when placing the item on a tile.',
+        example: 'WorldObjectSprite = furniture_storage_02_8,',
+    },
 
     /* CLOTHING & ALARMCLOCKCLOTHING ***************************************************/
 
@@ -649,7 +711,7 @@ export const properties: { [name: string]: ItemProperty } = {
         description: `
             Indicates the part of the body that the clothing is worn.
 
-            All locations are defined here: \`media/lua/shared/NPCs/BodyLocations.lua\`'
+            All locations are defined here: **media/lua/shared/NPCs/BodyLocations.lua**
         `,
         example: 'BodyLocation = Hat,',
     },
@@ -810,7 +872,7 @@ export const properties: { [name: string]: ItemProperty } = {
         description: `
             The area on the body where the object will be placed. 
             
-            All locations are located here: \`media/lua/shared/NPCs/BodyLocations.lua\`
+            All locations are located here: **media/lua/shared/NPCs/BodyLocations.lua**
         `,
         example: 'CanBeEquipped = FannyPackFront,',
     },
@@ -837,11 +899,6 @@ export const properties: { [name: string]: ItemProperty } = {
         type: 'string',
         description: 'The sound that will be played when the container is opened.',
         example: 'OpenSound = OpenBag,',
-    },
-    PutInSound: {
-        itemTypes: ['Container'],
-        type: 'string',
-        deprecated: true,
     },
     ReplaceInPrimaryHand: {
         itemTypes: ['Container'],
@@ -967,7 +1024,7 @@ export const properties: { [name: string]: ItemProperty } = {
             Specifies the location of make up. 
             
             All make up locations are defined here:
-            \`media/lua/shared/Definitions/MakeUpDefinitions.lua\`
+            **media/lua/shared/Definitions/MakeUpDefinitions.lua**
         `,
         example: 'MakeUpType = Lips,',
     },
@@ -996,18 +1053,6 @@ export const properties: { [name: string]: ItemProperty } = {
         type: 'float',
         description: 'Determines the sector on which the object will shine.',
         example: 'TorchDot = 0.66,',
-    },
-    UseDelta: {
-        itemTypes: ['Drainable'],
-        type: 'float',
-        description: `Determines how much the Drainable item's value will be spent on a single use.`,
-        example: 'UseDelta = 0.16,',
-    },
-    UseWhileEquipped: {
-        itemTypes: ['Drainable'],
-        type: 'boolean',
-        description: `If true, the drainable item's charge is spent when activated and equipped.`,
-        example: 'UseWhileEquipped = false,',
     },
     WeightEmpty: {
         itemTypes: ['Drainable'],
@@ -1406,17 +1451,16 @@ export const properties: { [name: string]: ItemProperty } = {
         example: 'Map = LouisvilleMap3,',
     },
 
-    /* MOVEABLE ************************************************************************/
-
-    WorldObjectSprite: {
-        itemTypes: ['Moveable'],
-        type: 'string',
-        description: 'Specifies the tile that is used when placing the item on a tile.',
-        example: 'WorldObjectSprite = furniture_storage_02_8,',
-    },
-
     /* RADIO ***************************************************************************/
-
+    AcceptMediaType: {
+        itemTypes: ['Radio'],
+        type: 'enum',
+        values: {
+            0: 'CDs',
+            1: 'TV-Tapes',
+        },
+        description: 'The type of media that this device can play.',
+    },
     BaseVolumeRange: {
         itemTypes: ['Radio'],
         type: 'int',
@@ -1550,17 +1594,6 @@ export const properties: { [name: string]: ItemProperty } = {
         type: 'string',
         description: 'Parameter for firearms. Specifies the ammo type.',
         example: 'AmmoType = Base.ShotgunShells,',
-    },
-    AttachmentType: {
-        itemTypes: ['Weapon'],
-        type: 'string',
-        description: `
-            Specifies the type of place, where will be attached item.
-            
-            All attachments you can find in:
-            "media/lua/client/Hotbar/ISHotbarAttachDefinition.lua"
-        `,
-        example: 'AttachmentType = Rifle,',
     },
     BaseSpeed: {
         itemTypes: ['Weapon'],
@@ -1949,11 +1982,6 @@ export const properties: { [name: string]: ItemProperty } = {
         description: 'Parameter for weapons. Sets the minimum damage factor, which affects the resulting damage.',
         example: 'MinDamage = 0.1,',
     },
-    MinimumSwingTime: {
-        itemTypes: ['Weapon'],
-        type: 'int',
-        deprecated: true,
-    },
     MinRange: {
         itemTypes: ['Weapon'],
         type: 'float',
@@ -2143,16 +2171,6 @@ export const properties: { [name: string]: ItemProperty } = {
         description: 'Parameter for firearms. A modifier that affects the chance of a critical shot.',
         example: 'StopPower = 7,',
     },
-    SubCategory: {
-        itemTypes: ['Weapon'],
-        type: 'string',
-        deprecated: true,
-    },
-    SwingAmountBeforeImpact: {
-        itemTypes: ['Weapon'],
-        type: 'float',
-        deprecated: true,
-    },
     SwingAnim: {
         itemTypes: ['Weapon'],
         type: 'string',
@@ -2164,11 +2182,6 @@ export const properties: { [name: string]: ItemProperty } = {
         type: 'string',
         description: 'Parameter for weapons. Specifies the sound that is played when swinging a weapon.',
         example: 'SwingSound = GriddlePanSwing,',
-    },
-    SwingTime: {
-        itemTypes: ['Weapon'],
-        type: 'int',
-        deprecated: true,
     },
     TreeDamage: {
         itemTypes: ['Weapon'],
@@ -2241,11 +2254,6 @@ export const properties: { [name: string]: ItemProperty } = {
         type: 'int',
         description: 'Modifier for the time it takes to aim a weapon. A positive number to speed up aiming speed.',
         example: 'AimingTimeModifier = 5,',
-    },
-    AimingMod: {
-        itemTypes: ['WeaponPart'],
-        type: 'int',
-        deprecated: true,
     },
     HitChanceModifier: {
         itemTypes: ['WeaponPart'],

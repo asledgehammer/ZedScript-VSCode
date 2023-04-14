@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import { ITEM_TYPES } from './item/ItemScope';
 import { CODE, outcase, ScopeProperty } from './Scope';
+import { ITEM_TYPES } from './item/ItemProperties';
 
 export function indent(s: string, indent: number): string {
     if (s.indexOf('\n') === -1) return ' '.repeat(indent) + s;

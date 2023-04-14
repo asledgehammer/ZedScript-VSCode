@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { tokenize } from '../API';
 import { LexerToken } from '../Lexer';
+import { ItemProperty } from './item/ItemProperties';
 
 export const CODE = '```';
 export const HEAD = '###';
@@ -94,9 +95,23 @@ export abstract class Scope {
             if (key.toLowerCase() === phrase) {
                 const def = properties[key];
 
-                let desc = '';
+                let desc = `## ${key}\n------\n\n`;
+
                 if (def.deprecated) {
                     desc += '### DEPRECATED\n\n';
+                }
+
+                // Add Item categories for property.
+                if ((def as any).itemTypes != null) {
+                    const idef = def as ItemProperty;
+
+                    if (idef.itemTypes.length !== 0 && idef.itemTypes.indexOf('Normal') === -1) {
+                        desc += '### Categories\n';
+                        for (const itemType of idef.itemTypes) {
+                            desc += `- ${itemType}\n`;
+                        }
+                        desc += '\n';
+                    }
                 }
 
                 if (def.description !== undefined) {
@@ -106,7 +121,7 @@ export abstract class Scope {
                     desc += `${EXAMPLE}\n${CODE}zed\n${outcase(def.example)}\n${CODE}\n`;
                 }
                 if (def.luaExample !== undefined) {
-                    desc += `${EXAMPLE}\n${CODE}lua\n${outcase(def.luaExample)}\n${CODE}\n`;
+                    desc += `${HEAD} Lua Example\n${CODE}lua\n${outcase(def.luaExample)}\n${CODE}\n`;
                 }
 
                 if (def.type === 'boolean') {
