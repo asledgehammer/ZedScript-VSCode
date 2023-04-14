@@ -95,7 +95,14 @@ export abstract class Scope {
             if (key.toLowerCase() === phrase) {
                 const def = properties[key];
 
-                let desc = `## ${key}\n------\n\n`;
+                let type = def.type as string;
+                if (type === 'string') {
+                    type = 'String';
+                } else if (type === 'lua') {
+                    type = 'Lua Function';
+                }
+
+                let desc = `${CODE}ts\n[${type}] ${key}\n${CODE}\n------\n\n`;
 
                 if (def.deprecated) {
                     desc += '### DEPRECATED\n\n';
@@ -118,10 +125,12 @@ export abstract class Scope {
                     desc += `${DESC}\n${outcase(def.description)}\n`;
                 }
                 if (def.example !== undefined) {
+                    if (def.example.startsWith('\n')) def.example = def.example.substring(1);
                     desc += `${EXAMPLE}\n${CODE}zed\n${outcase(def.example)}\n${CODE}\n`;
                 }
                 if (def.luaExample !== undefined) {
-                    desc += `${HEAD} Lua Example\n${CODE}lua\n${outcase(def.luaExample)}\n${CODE}\n`;
+                    if (def.luaExample.startsWith('\n')) def.luaExample = def.luaExample.substring(1);
+                    desc += `${LUA_EXAMPLE}\n${CODE}lua\n${outcase(def.luaExample)}\n${CODE}\n`;
                 }
 
                 if (def.type === 'boolean') {

@@ -223,7 +223,7 @@ export class ModuleScope {
     }
 
     onHover(phrase: string, data?: any): string {
-        return 'test';
+        return 'No description.';
     }
 
     getProperties(data?: any): { [name: string]: ScopeProperty } {
