@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import { tokenize } from './API';
-import { format } from './format/Format';
 import { LexerToken } from './Lexer';
 import { AnimationScope } from './scope/Animation';
 import { AnimationsMeshScope } from './scope/AnimationsMesh';

@@ -87,6 +87,113 @@ function formatIndent(options: Format3Options, tokens: Token3[], tokensNew: Toke
         if (tn1.type === 'new_line') {
             t.value = spaces;
         }
+    } 
+    
+    // Format all '=' properties to be like so: '[property] = [value]'
+    else if (t.type === 'delimiter_equals') {
+        const tn1 = tokens[meta.index - 1];
+
+        if (tn1 != null) {
+            if (tn1.type === 'white_space') tn1.value = ' ';
+            else
+                tokensNew.push({
+                    loc: undefined,
+                    type: 'white_space',
+                    value: ' ',
+                });
+        }
+
+        tokensNew.push(t);
+
+        const t1 = tokens[meta.index + 1];
+        if (t1 != null) {
+            if (t1.type === 'white_space') t1.value = ' ';
+            else
+                tokensNew.push({
+                    loc: undefined,
+                    type: 'white_space',
+                    value: ' ',
+                });
+        }
+
+        return false;
+    }
+    // Format all ':' properties to be like so: '[property]: [value]'
+    else if (t.type === 'delimiter_colon') {
+        const tn1 = tokens[meta.index - 1];
+
+        if (tn1 != null) {
+            if (tn1.type === 'white_space') tokens.pop();
+        }
+
+        tokensNew.push(t);
+
+        const t1 = tokens[meta.index + 1];
+        if (t1 != null) {
+            if (t1.type === 'white_space') t1.value = ' ';
+            else
+                tokensNew.push({
+                    loc: undefined,
+                    type: 'white_space',
+                    value: ' ',
+                });
+        }
+
+        return false;
+    }
+
+    // Format all ':' properties to be like so: '[item]; [item] ...'
+    else if (t.type === 'delimiter_semicolon') {
+        const tn1 = tokens[meta.index - 1];
+
+        if (tn1 != null) {
+            if (tn1.type === 'white_space') tokens.pop();
+        }
+
+        tokensNew.push(t);
+
+        const t1 = tokens[meta.index + 1];
+        if (t1 != null) {
+            if (t1.type === 'white_space') t1.value = ' ';
+            else
+                tokensNew.push({
+                    loc: undefined,
+                    type: 'white_space',
+                    value: ' ',
+                });
+        }
+
+        return false;
+    }
+
+    // Format all '/' properties to be like so: '[item] / [item] ...'
+    else if (t.type === 'delimiter_slash') {
+        const tn1 = tokens[meta.index - 1];
+
+        if (tn1 != null) {
+            if (tn1.type === 'white_space') tn1.value = ' ';
+            else
+                tokensNew.push({
+                    loc: undefined,
+                    type: 'white_space',
+                    value: ' ',
+                });
+        }
+
+        tokensNew.push(t);
+
+        const t1 = tokens[meta.index + 1];
+        if (t1 != null) {
+            if (t1.type === 'white_space') t1.value = ' ';
+            else
+                tokensNew.push({
+                    loc: undefined,
+                    type: 'white_space',
+                    value: ' ',
+                });
+        }
+
+        return false;
     }
 
     return true;
