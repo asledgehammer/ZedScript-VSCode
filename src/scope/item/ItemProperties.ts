@@ -156,7 +156,32 @@ export const properties: { [name: string]: ItemProperty } = {
         type: 'int',
         deprecated: true,
     },
+    AngleFalloff: {
+        itemTypes: ['Normal'],
+        type: 'int',
+        deprecated: true,
+    },
     AlwaysWelcomeGift: {
+        itemTypes: ['Normal'],
+        type: 'boolean',
+        deprecated: true,
+    },
+    CanBarricade: {
+        itemTypes: ['Normal'],
+        type: 'boolean',
+        deprecated: true,
+    },
+    CanStack: {
+        itemTypes: ['Normal'],
+        type: 'boolean',
+        deprecated: true,
+    },
+    ClipSizeModifier: {
+        itemTypes: ['Normal'],
+        type: 'int',
+        deprecated: true,
+    },
+    IsAimedHandWeapon: {
         itemTypes: ['Normal'],
         type: 'boolean',
         deprecated: true,
@@ -2254,6 +2279,18 @@ export const properties: { [name: string]: ItemProperty } = {
         type: 'int',
         description: 'Modifier for the time it takes to aim a weapon. A positive number to speed up aiming speed.',
         example: 'AimingTimeModifier = 5,',
+    },
+    AngleModifier: {
+        itemTypes: ['WeaponPart'],
+        type: 'float',
+        description: 'A modifier that affects the angle of fire.',
+        example: 'AngleModifier = -0.1,',
+    },
+    DamageModifier: {
+        itemTypes: ['WeaponPart'],
+        type: 'float',
+        description: 'Sets the damage modifier for the WeaponPart.',
+        example: 'DamageModifier = 0.5,',
     },
     HitChanceModifier: {
         itemTypes: ['WeaponPart'],
