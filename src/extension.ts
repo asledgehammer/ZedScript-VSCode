@@ -8,6 +8,8 @@ import { ItemScope } from './scope/item/ItemScope';
 import { ModuleScope } from './scope/Module';
 import { RecipeScope } from './scope/Recipe';
 import { getScope, getTokenAt, ScriptScope } from './scope/Scope';
+import { tokenize3 } from './TokenTake3';
+import { format3 } from './FormatTake3';
 
 export function activate(context: vscode.ExtensionContext) {
     // DIAGNOSTICS
@@ -39,14 +41,33 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.languages.registerDocumentFormattingEditProvider('zed', {
         provideDocumentFormattingEdits(document: vscode.TextDocument): vscode.TextEdit[] {
             try {
-                const delAll = vscode.TextEdit.delete(
-                    new vscode.Range(new vscode.Position(0, 0), document.positionAt(document.getText().length))
+                const t3 = tokenize3(document.getText());
+                const f3 = format3(t3, { bracketStyle: 'inline', propertyCasing: 'pascal_case' });
+
+                const editor = vscode.window.activeTextEditor!;
+                const position = editor!.selection.active;
+
+                const newPosition = position.with(position.line, 0);
+                const newSelection = new vscode.Selection(newPosition, newPosition);
+
+                setTimeout(() => {
+                    editor.selection = newSelection;
+                }, 10);
+
+                const range = new vscode.Range(
+                    new vscode.Position(0, 0),
+                    document.positionAt(document.getText().length)
                 );
-                const t = tokenize(document.getText());
-                const f = format(t);
-                const insert = vscode.TextEdit.insert(new vscode.Position(0, 0), f);
-                // const insert = vscode.TextEdit.insert(new vscode.Position(0, 0), JSON.stringify(t, null, 4));
-                return [delAll, insert];
+
+                const DEBUG = false;
+                if (DEBUG) {
+                    return [
+                        vscode.TextEdit.delete(range),
+                        vscode.TextEdit.insert(new vscode.Position(0, 0), JSON.stringify(t3, null, 4)),
+                    ];
+                }
+
+                return [vscode.TextEdit.replace(range, f3)];
             } catch (err) {
                 console.error(err);
             }
