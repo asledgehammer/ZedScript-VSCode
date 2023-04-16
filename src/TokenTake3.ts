@@ -1,3 +1,5 @@
+import { ParseError } from './api/util/ParseError';
+
 export type Token3Type =
     | 'white_space' // ' ', '\t', etc. (/\s/g)
     | 'new_line' // '\n'
@@ -45,7 +47,7 @@ export const CHAR_DICT: { [char: string]: Token3Type } = {
 
 export function tokenize3(raw: string): Token3[] {
     // Keeps returns consistent across encoding.
-    raw = raw.replace(/\r/g, '');
+    raw = raw.replace(/\r/g, ''); //.replace('/\t/g', '    ');
 
     /** Flag to keep track of whitespace tokens. */
     let inWhiteSpace = false;
@@ -60,6 +62,11 @@ export function tokenize3(raw: string): Token3[] {
     function push() {
         /** Only push if a token is present. */
         if (token != null && token.value !== '') {
+            
+            if (token.type === 'unknown') {
+                console.log({ token });
+                throw new Error();
+            }
             if (token.loc) {
                 token.loc.stop = { ...cursor };
             }
@@ -163,6 +170,7 @@ export function tokenize3(raw: string): Token3[] {
         if (inWhiteSpace) {
             // Continue to add to the whitespace token.
             if (isWhiteSpaceCharacter(c)) {
+                token!.type = 'white_space';
                 token!.value += c;
                 continue;
             }
@@ -194,7 +202,7 @@ export function tokenize3(raw: string): Token3[] {
         // Entering a whitespace token.
         if (isWhiteSpaceCharacter(c)) {
             // Push the previous token as it is now complete.
-            push();
+            if (token!.type !== 'unknown') push();
             token!.type = 'white_space';
             token!.value = c;
             inWhiteSpace = true;
@@ -218,6 +226,7 @@ export function tokenize3(raw: string): Token3[] {
 
         if (token == null) push();
         // Is a word at this point.
+        token!.type = 'word';
         token!.value += c;
     }
 
