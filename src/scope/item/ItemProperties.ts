@@ -517,9 +517,9 @@ export const properties: { [name: string]: ItemProperty } = {
         description: `
                     Used to specify an item to replace when the item is filled with something. 
                     
-                    > Written in the format: **"Source ResultItem; Source2 ResultItem2"**
+                    > Written in the format: **"Source ResultItem;Source2 ResultItem2"**
                 `,
-        example: 'ReplaceTypes = PetrolSource WaterBottlePetrol ; WaterSource WaterBottleFull,',
+        example: 'ReplaceTypes = PetrolSource WaterBottlePetrol ;WaterSource WaterBottleFull,',
     },
     RequiresEquippedBothHands: {
         itemTypes: ['Normal'],
@@ -714,7 +714,7 @@ export const properties: { [name: string]: ItemProperty } = {
         type: 'enum',
         values: ATTACHMENTS_VALUES,
         description: 'Sets the equipment slots the item occupies. (Multiple entries are possible)',
-        example: 'AttachmentsProvided = HolsterLeft; HolsterRight,',
+        example: 'AttachmentsProvided = HolsterLeft;HolsterRight,',
     },
     BiteDefense: {
         itemTypes: ['AlarmClockClothing', 'Clothing'],
@@ -727,7 +727,7 @@ export const properties: { [name: string]: ItemProperty } = {
         type: 'enum',
         values: BLOOD_CLOTHING_TYPE_VALUES,
         description: 'Specifies the zones where blood will be displayed on this item of clothing.',
-        example: 'BloodLocation = FullHelmet; Neck,',
+        example: 'BloodLocation = FullHelmet;Neck,',
     },
     BodyLocation: {
         itemTypes: ['AlarmClockClothing', 'Clothing'],
@@ -802,7 +802,7 @@ export const properties: { [name: string]: ItemProperty } = {
 
             (As specified in the .xml file of the clothing)
         `,
-        example: 'IconsForTexture = BandanaBlack; BandanaBlue; BandanaRed,',
+        example: 'IconsForTexture = BandanaBlack;BandanaBlue;BandanaRed,',
     },
     Insulation: {
         itemTypes: ['AlarmClockClothing', 'Clothing'],
@@ -2314,7 +2314,7 @@ export const properties: { [name: string]: ItemProperty } = {
         itemTypes: ['WeaponPart'],
         type: 'string',
         description: 'Indicates which weapon this item (Weapon part) can be applied to.',
-        example: 'MountOn = HuntingRifle; VarmintRifle; Shotgun,',
+        example: 'MountOn = HuntingRifle;VarmintRifle;Shotgun,',
     },
     PartType: {
         itemTypes: ['WeaponPart'],

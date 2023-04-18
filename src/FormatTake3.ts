@@ -1,4 +1,4 @@
-import { Token3, Token3Type } from './TokenTake3';
+import { FAKE_LOC, Token3, Token3Type } from './TokenTake3';
 
 export type Format3Options = {
     bracketStyle: 'inline' | 'allman';
@@ -21,7 +21,7 @@ function inject(tokens: Token3[], type: Token3Type, value: string) {
     tokens.push({
         type,
         value,
-        loc: undefined,
+        loc: FAKE_LOC,
     });
 }
 
@@ -87,8 +87,8 @@ function formatIndent(options: Format3Options, tokens: Token3[], tokensNew: Toke
         if (tn1.type === 'new_line') {
             t.value = spaces;
         }
-    } 
-    
+    }
+
     // Format all '=' properties to be like so: '[property] = [value]'
     else if (t.type === 'delimiter_equals') {
         const tn1 = tokens[meta.index - 1];
@@ -97,7 +97,7 @@ function formatIndent(options: Format3Options, tokens: Token3[], tokensNew: Toke
             if (tn1.type === 'white_space') tn1.value = ' ';
             else
                 tokensNew.push({
-                    loc: undefined,
+                    loc: FAKE_LOC,
                     type: 'white_space',
                     value: ' ',
                 });
@@ -110,7 +110,7 @@ function formatIndent(options: Format3Options, tokens: Token3[], tokensNew: Toke
             if (t1.type === 'white_space') t1.value = ' ';
             else
                 tokensNew.push({
-                    loc: undefined,
+                    loc: FAKE_LOC,
                     type: 'white_space',
                     value: ' ',
                 });
@@ -119,12 +119,21 @@ function formatIndent(options: Format3Options, tokens: Token3[], tokensNew: Toke
         return false;
     }
     // Format all ':' properties to be like so: '[property]: [value]'
+    else if (t.type === 'delimiter_slash' || t.type === 'delimiter_semicolon') {
+        const tn1 = tokens[meta.index - 1];
+        if (tn1 != null && tn1.type === 'white_space') tokensNew.pop();
+
+        tokensNew.push(t);
+
+        const t1 = tokens[meta.index + 1];
+        if (t1 != null && t1.type === 'white_space') tokens.splice(meta.index + 1, 1);
+
+        return false;
+    }
+    // Format all ':' properties to be like so: '[property]: [value]'
     else if (t.type === 'delimiter_colon') {
         const tn1 = tokens[meta.index - 1];
-
-        if (tn1 != null) {
-            if (tn1.type === 'white_space') tokens.pop();
-        }
+        if (tn1 != null && tn1.type === 'white_space') tokensNew.pop();
 
         tokensNew.push(t);
 
@@ -133,68 +142,79 @@ function formatIndent(options: Format3Options, tokens: Token3[], tokensNew: Toke
             if (t1.type === 'white_space') t1.value = ' ';
             else
                 tokensNew.push({
-                    loc: undefined,
+                    loc: FAKE_LOC,
                     type: 'white_space',
                     value: ' ',
                 });
         }
 
         return false;
-    }
-
-    // Format all ':' properties to be like so: '[item]; [item] ...'
-    else if (t.type === 'delimiter_semicolon') {
+    } else if (t.type === 'property_terminator') {
         const tn1 = tokens[meta.index - 1];
-
-        if (tn1 != null) {
-            if (tn1.type === 'white_space') tokens.pop();
-        }
+        if (tn1 != null && tn1.type === 'white_space') tokensNew.pop();
 
         tokensNew.push(t);
 
         const t1 = tokens[meta.index + 1];
-        if (t1 != null) {
-            if (t1.type === 'white_space') t1.value = ' ';
-            else
-                tokensNew.push({
-                    loc: undefined,
-                    type: 'white_space',
-                    value: ' ',
-                });
+        if (t1 != null && t1.type === 'white_space') {
+            t1.type = 'new_line';
+            t1.value = '\n';
+            // tokens.splice(meta.index + 1, 1);
         }
 
         return false;
+    } else if (t.type === 'word') {
+        const valueLower = t.value.toLowerCase();
+
+        // Enforce 'true' / 'false' being lower-cased.
+        if (valueLower === 'true') t.value = 'true';
+        else if (valueLower === 'false') t.value = 'false';
     }
 
-    // Format all '/' properties to be like so: '[item] / [item] ...'
-    else if (t.type === 'delimiter_slash') {
-        const tn1 = tokens[meta.index - 1];
-
-        if (tn1 != null) {
-            if (tn1.type === 'white_space') tn1.value = ' ';
-            else
-                tokensNew.push({
-                    loc: undefined,
-                    type: 'white_space',
-                    value: ' ',
-                });
-        }
-
-        tokensNew.push(t);
-
-        const t1 = tokens[meta.index + 1];
-        if (t1 != null) {
-            if (t1.type === 'white_space') t1.value = ' ';
-            else
-                tokensNew.push({
-                    loc: undefined,
-                    type: 'white_space',
-                    value: ' ',
-                });
-        }
-
-        return false;
-    }
+    // // Format all ':' properties to be like so: '[item]; [item] ...'
+    // else if (t.type === 'delimiter_semicolon') {
+    //     const tn1 = tokens[meta.index - 1];
+    //     if (tn1 != null) {
+    //         if (tn1.type === 'white_space') tokens.pop();
+    //     }
+    //     tokensNew.push(t);
+    //     const t1 = tokens[meta.index + 1];
+    //     if (t1 != null) {
+    //         if (t1.type === 'white_space') t1.value = ' ';
+    //         else
+    //             tokensNew.push({
+    //                 loc: undefined,
+    //                 type: 'white_space',
+    //                 value: ' ',
+    //             });
+    //     }
+    //     return false;
+    // }
+    // // Format all '/' properties to be like so: '[item] / [item] ...'
+    // else if (t.type === 'delimiter_slash') {
+    //     const tn1 = tokens[meta.index - 1];
+    //     if (tn1 != null) {
+    //         if (tn1.type === 'white_space') tn1.value = ' ';
+    //         else
+    //             tokensNew.push({
+    //                 loc: undefined,
+    //                 type: 'white_space',
+    //                 value: ' ',
+    //             });
+    //     }
+    //     tokensNew.push(t);
+    //     const t1 = tokens[meta.index + 1];
+    //     if (t1 != null) {
+    //         if (t1.type === 'white_space') t1.value = ' ';
+    //         else
+    //             tokensNew.push({
+    //                 loc: undefined,
+    //                 type: 'white_space',
+    //                 value: ' ',
+    //             });
+    //     }
+    //     return false;
+    // }
 
     return true;
 }
@@ -234,7 +254,7 @@ function formatScope(options: Format3Options, tokens: Token3[], tokensNew: Token
                     tokensNew.push({
                         type: 'white_space',
                         value: ' ',
-                        loc: undefined,
+                        loc: FAKE_LOC,
                     });
                 }
             }
@@ -247,6 +267,12 @@ function formatScope(options: Format3Options, tokens: Token3[], tokensNew: Token
 }
 
 export function format3(tokens: Token3[], options: Partial<Format3Options>): string {
+    
+    // Clone the tokens to not poison the original tokens passed.
+    tokens = tokens.map((o) => {
+        return { ...o };
+    });
+
     // Insert default options to complete.
     const optionsAll: Format3Options = { ...DEFAULT_FORMAT3_OPTIONS, ...options };
 

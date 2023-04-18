@@ -1,4 +1,7 @@
-import { ParseError } from './api/util/ParseError';
+import { Format3Options } from './FormatTake3';
+
+export const FAKE_CURSOR = { row: -1, col: -1 };
+export const FAKE_LOC = { start: FAKE_CURSOR, stop: FAKE_CURSOR };
 
 export type Token3Type =
     | 'white_space' // ' ', '\t', etc. (/\s/g)
@@ -29,7 +32,7 @@ export type Token3Location = {
 };
 
 export type Token3 = {
-    loc: Token3Location | undefined;
+    loc: Token3Location;
     value: string;
     type: Token3Type;
 };
@@ -45,45 +48,46 @@ export const CHAR_DICT: { [char: string]: Token3Type } = {
     '/': 'delimiter_slash',
 };
 
-export function tokenize3(raw: string): Token3[] {
+export function tokenize3(raw: string, options: Format3Options): Token3[] {
     // Keeps returns consistent across encoding.
-    raw = raw.replace(/\r/g, ''); //.replace('/\t/g', '    ');
+    raw = raw.replace(/\r/g, '');//.replace('/\t/g', ' '.repeat(options.indentSize));
+
+    function getCursor(index: number): Token3Cursor {
+        let row = 1;
+        let col = 1;
+        for (let i = 0; i < Math.min(raw.length, index); i++) {
+            const c = raw[i];
+            if (c === '\n') {
+                row++;
+                col = 1;
+            } else if (c === '\t') {
+                col += options.indentSize;
+            } else {
+                col++;
+            }
+        }
+        return { row, col };
+    }
 
     /** Flag to keep track of whitespace tokens. */
     let inWhiteSpace = false;
     let inComment = false;
     let inCommentType: 'line' | 'block' | undefined;
 
-    const cursor: Token3Cursor = { row: 0, col: 0 };
-
     const tokens: Token3[] = [];
     let token: Token3 | undefined;
 
-    function push() {
-        /** Only push if a token is present. */
-        if (token != null && token.value !== '') {
-            
-            if (token.type === 'unknown') {
-                console.log({ token });
-                throw new Error();
-            }
-            if (token.loc) {
-                token.loc.stop = { ...cursor };
-            }
-            tokens.push(token);
-        }
-
-        token = {
-            loc: undefined,
-            // loc: { start: { ...cursor }, stop: { row: -1, col: -1 } },
-            value: '',
-            type: 'unknown',
-        };
+    function isValidToken() {
+        return token != null && token.type !== 'unknown' && token.value !== '';
     }
 
-    for (let i = 0; i < raw.length; i++) {
-        const c = raw[i];
+    let i = 0;
+
+    for (; i < raw.length; i++) {
+        let c = raw[i];
         const c1 = raw[i + 1];
+
+        if(c === '\t') c = ' '.repeat(options.indentSize);
 
         // Always check for new_lines first.
         if (c === '\n') {
@@ -96,14 +100,23 @@ export function tokenize3(raw: string): Token3[] {
             }
 
             // Line-comments and words are done when a new_line is present.
-            push();
+            if (isValidToken()) {
+                token!.loc.stop = getCursor(i);
+                tokens.push(token!);
+            }
+
+            inWhiteSpace = false;
             inCommentType = undefined;
             inComment = false;
 
-            token!.type = 'new_line';
-            token!.value = '\n';
-            push();
+            token = {
+                loc: { start: getCursor(i), stop: getCursor(i + 1) },
+                type: 'new_line',
+                value: '\n',
+            };
 
+            tokens.push(token);
+            token = undefined;
             continue;
         }
 
@@ -112,14 +125,22 @@ export function tokenize3(raw: string): Token3[] {
             // In a comment block this signals the termination of the block.
             if (inCommentType === 'block') {
                 if (c === '*' && c1 === '/') {
-                    push();
+                    if (isValidToken()) {
+                        token!.loc.stop = getCursor(i);
+                        tokens.push(token!);
+                    }
 
-                    token!.type = 'comment_block_close';
-                    token!.value = '*/';
-                    push();
+                    token = {
+                        loc: { start: getCursor(i), stop: getCursor(i + 2) },
+                        type: 'comment_block_close',
+                        value: '*/',
+                    };
+
+                    tokens.push(token);
+                    token = undefined;
 
                     // Skip over the next character to avoid redundancy and error in the next token.
-                    i += 1;
+                    i++;
                     inComment = false;
                     inCommentType = undefined;
                     continue;
@@ -133,33 +154,55 @@ export function tokenize3(raw: string): Token3[] {
         if (c === '/') {
             if (c1 === '*') {
                 // Push the previous token as it is now complete.
-                push();
+                if (isValidToken()) {
+                    token!.loc.stop = getCursor(i);
+                    tokens.push(token!);
+                }
 
                 // The comment_block_open token is always the same.
-                token!.type = 'comment_block_open';
-                token!.value = '/*';
-                push();
+                token = {
+                    loc: { start: getCursor(i), stop: getCursor(i + 2) },
+                    type: 'comment_block_open',
+                    value: '/*',
+                };
 
-                token!.type = 'comment_block';
+                tokens.push(token);
+
+                token = {
+                    loc: { start: getCursor(i + 2), stop: { row: -1, col: -1 } },
+                    type: 'comment_block',
+                    value: '',
+                };
 
                 // Skip over the next character to avoid redundancy and error in the next token.
-                i += 1;
+                i++;
                 inCommentType = 'block';
                 inComment = true;
                 continue;
             } else if (c1 === '/') {
                 // Push the previous token as it is now complete.
-                push();
+                if (isValidToken()) {
+                    token!.loc.stop = getCursor(i);
+                    tokens.push(token!);
+                }
 
                 // The comment_line_open token is always the same.
-                token!.type = 'comment_line_open';
-                token!.value = '//';
-                push();
+                token = {
+                    loc: { start: getCursor(i), stop: getCursor(i + 2) },
+                    type: 'comment_line_open',
+                    value: '//',
+                };
 
-                token!.type = 'comment_line';
+                tokens.push(token);
+
+                token = {
+                    loc: { start: getCursor(i + 2), stop: { row: -1, col: -1 } },
+                    type: 'comment_line',
+                    value: '',
+                };
 
                 // Skip over the next character to avoid redundancy and error in the next token.
-                i += 1;
+                i++;
                 inCommentType = 'line';
                 inComment = true;
                 continue;
@@ -170,41 +213,62 @@ export function tokenize3(raw: string): Token3[] {
         if (inWhiteSpace) {
             // Continue to add to the whitespace token.
             if (isWhiteSpaceCharacter(c)) {
-                token!.type = 'white_space';
-                token!.value += c;
+                if (token === undefined) {
+                    token = {
+                        loc: { start: getCursor(i), stop: { row: -1, col: -1 } },
+                        type: 'white_space',
+                        value: c,
+                    };
+                } else {
+                    token!.type = 'white_space';
+                    token!.value += c;
+                }
                 continue;
             }
 
             // Push the white_space token as it is now complete.
-            push();
+            if (isValidToken()) {
+                token!.loc.stop = getCursor(i);
+                tokens.push(token!);
+            }
+
+            token = undefined;
+
             // This is the end of the white_space token.
             inWhiteSpace = false;
 
             // Check if next character is a special character.
             if (isSpecialCharacter(c)) {
                 // Apply the special character traits here.
-                token!.type = CHAR_DICT[c];
-                token!.value = c;
+                token = {
+                    loc: { start: getCursor(i), stop: getCursor(i + 1) },
+                    type: CHAR_DICT[c],
+                    value: c,
+                };
 
-                // The special char token is complete.
-                push();
-
+                tokens.push(token);
+                token = undefined;
                 continue;
             }
-
-            // The next character is part of a normal word token.
-            token!.type = 'word';
-            token!.value += c;
-
-            continue;
         }
 
         // Entering a whitespace token.
-        if (isWhiteSpaceCharacter(c)) {
+        else if (isWhiteSpaceCharacter(c)) {
+            // (Sanity-Check)
+            if (inWhiteSpace) throw new Error();
+
             // Push the previous token as it is now complete.
-            if (token!.type !== 'unknown') push();
-            token!.type = 'white_space';
-            token!.value = c;
+            if (isValidToken()) {
+                token!.loc.stop = getCursor(i);
+                tokens.push(token!);
+            }
+
+            token = {
+                loc: { start: getCursor(i), stop: { row: -1, col: -1 } },
+                type: 'white_space',
+                value: c,
+            };
+
             inWhiteSpace = true;
             continue;
         }
@@ -212,22 +276,34 @@ export function tokenize3(raw: string): Token3[] {
         // Check for special characters.
         else if (isSpecialCharacter(c)) {
             // Push the previous token as it is now complete.
-            push();
+            if (isValidToken()) {
+                token!.loc.stop = getCursor(i);
+                tokens.push(token!);
+            }
 
             // Apply the special character traits here.
-            token!.type = CHAR_DICT[c];
-            token!.value = c;
+            token = {
+                loc: { start: getCursor(i), stop: getCursor(i + 1) },
+                type: CHAR_DICT[i],
+                value: c,
+            };
 
             // The special char token is complete.
-            push();
-
+            tokens.push(token);
+            token = undefined;
             continue;
         }
 
-        if (token == null) push();
         // Is a word at this point.
-        token!.type = 'word';
-        token!.value += c;
+        if (token === undefined) {
+            token = {
+                loc: { start: getCursor(i), stop: { row: -1, col: -1 } },
+                type: 'word',
+                value: c,
+            };
+        } else {
+            token.value += c;
+        }
     }
 
     return tokens;

@@ -8,7 +8,9 @@ import { ModuleScope } from './scope/Module';
 import { RecipeScope } from './scope/Recipe';
 import { getScope, getTokenAt, ScriptScope } from './scope/Scope';
 import { tokenize3 } from './TokenTake3';
-import { format3 } from './FormatTake3';
+import { format3, Format3Options } from './FormatTake3';
+
+const DEBUG = false;
 
 export function activate(context: vscode.ExtensionContext) {
     // DIAGNOSTICS
@@ -40,8 +42,14 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.languages.registerDocumentFormattingEditProvider('zed', {
         provideDocumentFormattingEdits(document: vscode.TextDocument): vscode.TextEdit[] {
             try {
-                const t3 = tokenize3(document.getText());
-                const f3 = format3(t3, { bracketStyle: 'inline', propertyCasing: 'pascal_case' });
+                const options: Format3Options = {
+                    indentSize: vscode.window.activeTextEditor?.options.tabSize as number,
+                    bracketStyle: 'inline',
+                    propertyCasing: 'pascal_case',
+                };
+
+                const t3 = tokenize3(document.getText(), options);
+                const f3 = format3(t3, options);
 
                 const editor = vscode.window.activeTextEditor!;
                 const position = editor!.selection.active;
@@ -58,7 +66,7 @@ export function activate(context: vscode.ExtensionContext) {
                     document.positionAt(document.getText().length)
                 );
 
-                const DEBUG = false;
+            
                 if (DEBUG) {
                     return [
                         vscode.TextEdit.delete(range),
@@ -77,6 +85,7 @@ export function activate(context: vscode.ExtensionContext) {
     const hover1 = vscode.languages.registerHoverProvider('zed', {
         provideHover(document: vscode.TextDocument, position: vscode.Position, _: vscode.CancellationToken) {
             try {
+                if(DEBUG) return;
                 const enabled = vscode.workspace.getConfiguration('zedscript').get('hoverPopupEnabled');
                 if (!enabled) {
                     return;
