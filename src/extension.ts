@@ -9,6 +9,7 @@ import { RecipeScope } from './scope/Recipe';
 import { getScope, getTokenAt, ScriptScope } from './scope/Scope';
 import { tokenize3 } from './TokenTake3';
 import { format3, Format3Options } from './FormatTake3';
+import { lint3 } from './LinterTake3';
 
 const DEBUG = false;
 
@@ -49,6 +50,9 @@ export function activate(context: vscode.ExtensionContext) {
                 };
 
                 const t3 = tokenize3(document.getText(), options);
+                const l3 = lint3(t3);
+                console.log(JSON.stringify(l3.logs, null, 4));
+                
                 const f3 = format3(t3, options);
 
                 const editor = vscode.window.activeTextEditor!;
@@ -73,8 +77,8 @@ export function activate(context: vscode.ExtensionContext) {
                         vscode.TextEdit.insert(new vscode.Position(0, 0), JSON.stringify(t3, null, 4)),
                     ];
                 }
-
-                return [vscode.TextEdit.replace(range, f3)];
+                return [];
+                // return [vscode.TextEdit.replace(range, f3)];
             } catch (err) {
                 console.error(err);
             }

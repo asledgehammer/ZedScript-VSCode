@@ -50,7 +50,7 @@ export const CHAR_DICT: { [char: string]: Token3Type } = {
 
 export function tokenize3(raw: string, options: Format3Options): Token3[] {
     // Keeps returns consistent across encoding.
-    raw = raw.replace(/\r/g, '');//.replace('/\t/g', ' '.repeat(options.indentSize));
+    raw = raw.replace(/\r/g, ''); //.replace('/\t/g', ' '.repeat(options.indentSize));
 
     function getCursor(index: number): Token3Cursor {
         let row = 1;
@@ -87,7 +87,7 @@ export function tokenize3(raw: string, options: Format3Options): Token3[] {
         let c = raw[i];
         const c1 = raw[i + 1];
 
-        if(c === '\t') c = ' '.repeat(options.indentSize);
+        if (c === '\t') c = ' '.repeat(options.indentSize);
 
         // Always check for new_lines first.
         if (c === '\n') {
@@ -246,6 +246,9 @@ export function tokenize3(raw: string, options: Format3Options): Token3[] {
                     value: c,
                 };
 
+                // (Sanity Check)
+                if (token.type === undefined) throw new Error();
+
                 tokens.push(token);
                 token = undefined;
                 continue;
@@ -284,9 +287,12 @@ export function tokenize3(raw: string, options: Format3Options): Token3[] {
             // Apply the special character traits here.
             token = {
                 loc: { start: getCursor(i), stop: getCursor(i + 1) },
-                type: CHAR_DICT[i],
+                type: CHAR_DICT[c],
                 value: c,
             };
+
+            // (Sanity Check)
+            if (token.type === undefined) throw new Error();
 
             // The special char token is complete.
             tokens.push(token);
