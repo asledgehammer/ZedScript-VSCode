@@ -2,30 +2,6 @@ import { Token3, Token3Location } from './TokenTake3';
 
 const DEBUG = true;
 
-/*
- * SCOPE RULES:
- *
- * ## Scopes
- *   - `scope=number`: Can only be in the number scope. `(0 === root)`
- *   - `scope>number`: Can only be above the number.
- *   - `scope<number`: Can only be below the number.
- *   - `scope>=number`: Can only be the number or above the number.
- *   - `scope<=number`: Can only be the number or below the number.
- *   - `scope_open` The token must be `{`.
- *   - `scope_close`: The token must be `}`.
- *
- * ## Words
- *   - `word`: A word token must be present.
- *   - `words`: Any number of word tokens must be present.
- *   - `word:value`: A word with the value must be present.
- *
- * ## Special Characters
- *   - `property_terminator`: The token must be `,`.
- *
- * ## Misc
- *   - `*`: Can contain any number of token-sequences.
- */
-
 export type Lint3Log = {
     type: 'info' | 'warning' | 'error';
     message: string;
@@ -52,17 +28,16 @@ const PROPERTY_COLON_RULE = [
 ];
 
 const SCOPE_RULES: { [word: string]: string[] } = {
-    /** module word[1] { ... } */
-    module: ['scope:root', 'word', 'scope_open', '*', 'scope_close'],
+    module: ['scope;root', 'title;word', 'body;category'],
 
     /** ANIMATION **************************************************** */
-    animation: ['scope:root.module', 'word', 'scope_open', '*=', 'scope_close'],
-    copyframe: ['scope:root.module.animation', 'scope_open', '*=', 'scope_close'],
-    copyframes: ['scope:root.module.animation', 'scope_open', '*=', 'scope_close'],
+    animation: ['scope;root.module', 'title;word', 'body;='],
+    copyframe: ['scope;root.module.animation', 'body;='],
+    copyframes: ['scope;root.module.animation', 'body;='],
 };
 
-export function lint3(tokens: Token3[]): Lint3Results {
-    tokens = tokens
+export function stripWhiteSpace(tokens: Token3[]): Token3[] {
+    return tokens
         .filter((o) => {
             // Remove all whitespace and new_lines to keep pattern checks clean.
             // Remove all comment tokens. These do not affect the linting process.
@@ -80,31 +55,17 @@ export function lint3(tokens: Token3[]): Lint3Results {
             // Clone the tokens to not poison the original tokens passed.
             return { ...o };
         });
+}
+
+export function lint3(tokens: Token3[]): Lint3Results {
+    const EOFToken = tokens[tokens.length - 1];
+    const EOFLocation = { start: EOFToken.loc.stop, stop: { ...EOFToken.loc.stop, col: EOFToken.loc.stop.col + 1 } };
+
+    tokens = stripWhiteSpace(tokens);
 
     const logs: Lint3Log[] = [];
-
     const scope: string[] = ['root'];
-
-    function stepIntoScope(name: string) {
-        scope.push(name);
-        scopeIndent++;
-        if (DEBUG) console.log(`Stepping into scope: ${scope.join('.')} ..`);
-    }
-
-    function stepOutOfScope() {
-        if (scope.length !== 0) {
-            scopeIndent--;
-            const popped = scope.pop();
-
-            if (DEBUG) {
-                if (scope.length === 0) {
-                    console.log(`Stepping out of scope: ${popped} ..`);
-                } else {
-                    console.log(`Stepping out of scope: ${scope.join('.')}.${popped} ..`);
-                }
-            }
-        }
-    }
+    const scopeToTrace: string[] = ['root'];
 
     function error(location: Token3Location, message: string) {
         if (DEBUG) throw new Error(`[${location.start.row}:${location.start.col}]: ${message}`);
@@ -134,61 +95,20 @@ export function lint3(tokens: Token3[]): Lint3Results {
     function expectScope(token: Token3, value: string) {
         error(
             token.loc,
-            `Unexpected token: '${token.value}'. (Improper scope: ${scope.join('.')}; Expected scope: ${value})`
+            `Unexpected token: '${token.value}'. (Improper scope: ${scopeToTrace.join('.')}; Expected scope: ${value})`
         );
     }
 
-    function unexpectedEOT() {
+    function errorEOT() {
         const start = { ...tokens[tokens.length - 1].loc.stop };
         const stop = { ...start };
         error({ start, stop }, 'Unexpected EOF.');
     }
 
-    // function expectScopeOpen(token: Token3) {
-    //     error(token.loc, `Illegal token: '${token.value}' (Expected '{')`);
-    // }
-
-    // function expectScopeClose(token: Token3) {
-    //     error(token.loc, `Illegal token: '${token.value}' (Expected '}')`);
-    // }
-
     /**
      * The offset of the current token to lint.
      */
     let i = 0;
-
-    /**
-     * The current token to lint.
-     */
-    let t: Token3;
-
-    /**
-     * The token following the current token to lint.
-     */
-    let t1: Token3;
-
-    /**
-     * @param offset (Default: 1) The offset to shift for the token to lint.
-     */
-    function shift(offset = 1) {
-        i += offset;
-        t = tokens[i];
-        t1 = tokens[i + 1];
-    }
-
-    /**
-     * (Alias to keep code legible by humans)
-     *
-     * Alias to `shift()`. (Or `shift(1)`)
-     */
-    function next() {
-        shift();
-    }
-
-    /**
-     * Keeps track of how many scopes are nested where the current token is.
-     */
-    let scopeIndent = 0;
 
     /**
      * @param index The tokens-index to check.
@@ -199,326 +119,247 @@ export function lint3(tokens: Token3[]): Lint3Results {
     }
 
     /**
-     * Scans into the next non-word token. (Useful for multi-word token sequences)
-     *
-     * **NOTE**: If the current token-type is NOT a 'word', then nothing will happen.
-     */
-    function skipWords() {
-        if (t.type !== 'word') return;
-
-        while (!isEOT() && t.type === 'word') next();
-    }
-
-    /**
      * Scans into the next token with the type.
      *
      * **NOTE**: If the current token-type EQUALS the type, then nothing will happen.
      */
-    function skipUntilType(type: string[] | string) {
+    function skipUntil(type: string[] | string) {
         if (typeof type === 'string') type = [type];
 
-        if (type.indexOf(t.type) !== -1) return;
+        let token = tokens[i];
+        if (type.indexOf(token.type) !== -1) return;
 
-        while (!isEOT() && type.indexOf(t.type) === -1) next();
+        while (!isEOT() && type.indexOf(token.type) === -1) {
+            token = tokens[++i];
+        }
     }
 
-    function scanProperty(name: string, value: Token3[]) {
-        if (DEBUG)
-            console.log(
-                `\t\tscanProperty() => ${name} = ${value
-                    .map((o) => {
-                        return o.value;
-                    })
-                    .join(' ')}`
-            );
+    function intoProperty(key: string, value: Token3[]): number {
+        const valString = value
+            .map((o) => {
+                return o.value;
+            })
+            .join(' ');
+        console.log(`Property Detected: key=${key} value=${valString}`);
+        return 0;
     }
 
-    function scanIntoProperties(delimiter: '=' | ':'): boolean {
+    function intoScope(value: string, rules: string[]): number {
+        if (DEBUG) console.log(`intoScope(${value})`);
+        let hasTitle = false;
+        let titleType: 'word' | 'words' = 'word';
+        let keyValDelimiter: '=' | ':' = '=';
+        let scopeRequired: string | null = null;
 
-        if (DEBUG) console.log('\tscanIntoProperties()', t);
-
-        // Go through each property in the sequence.
-        while (!isEOT()) {
-
-            // The properties scope is done.
-            if(t.type === 'scope_close') {
-                console.log("fun return }");
-                // i--;
-                return true;
+        for (let rule of rules) {
+            rule = rule.toLowerCase();
+            if (rule.indexOf('body;') === 0) {
+                keyValDelimiter = rule.split(';')[1] as '=' | ':';
+            } else if (rule.indexOf('title;') === 0) {
+                hasTitle = true;
+                titleType = rule.split(';')[1] as 'word' | 'words';
+            } else if (rule.indexOf('scope;') === 0) {
+                scopeRequired = rule.split(';')[1];
             }
+        }
 
-            // Checks the first token in the sequence.
-            if (t.type !== 'word') {
-                expectWord(t);
-
-                // Since the property is invalid, skip to the next property.
-                skipUntilType(['delimiter_property', 'scope_close']);
-                break;
+        if (scopeRequired !== null) {
+            if (scope.join('.') !== scopeRequired) {
+                // We need to interpret this return as non-fatal.
+                return 1;
             }
+        }
 
-            const valLower = t.value.toLowerCase().trim();
+        scope.push(value);
 
-            // This property is a scope. Treat it like one.
-            if (SCOPE_RULES[valLower] !== undefined) {
-                // Process the scope and its rules.
-                if (!scanIntoScope()) return false;
+        let token = tokens[++i];
+        let title = '';
+
+        if (hasTitle) {
+            // Both title types requires at least one word token.
+            if (token.type !== 'word') {
+                expectWord(token);
+                scope.pop();
+                scopeToTrace.pop();
+                return -1;
+            } else if (titleType === 'words') {
+                title = token.value;
+                // Skip word tokens.
+                while (token.type === 'word') {
+                    token = tokens[++i];
+                    title += ` ${token.value}`;
+                }
+
+                // A 'scope_open' MUST follow the word tokens for the scope's title.
+                if (token.type !== 'scope_open') {
+                    expectValue(token, '{');
+                    scope.pop();
+                    scopeToTrace.pop();
+                    return -1;
+                }
             } else {
-                const propertyName = valLower;
-                const propertyValue = [];
+                title = token.value;
+                token = tokens[++i];
 
-                // Grab our next token by shifting 1 index.
-                t = tokens[++i];
+                // A 'scope_open' MUST follow the word tokens for the scope's title.
+                if (token.type !== 'scope_open') {
+                    expectValue(token, '{');
+                    scope.pop();
+                    scopeToTrace.pop();
+                    return -1;
+                }
+            }
+            scopeToTrace.push(`${value}[${title}]`);
+        } else {
+            scopeToTrace.push(`${value}`);
+            // A 'scope_open' MUST follow the word tokens for the scope's title.
+            if (token.type !== 'scope_open') {
+                expectValue(token, '{');
+                scope.pop();
+                scopeToTrace.pop();
+                return -1;
+            }
+        }
 
-                if (t.value !== delimiter) {
-                    expectValue(t, delimiter);
-                    // Since the property is invalid, skip to the next property.
-                    skipUntilType(['delimiter_property', 'scope_close']);
+        // This keeps track of untracked scopes so that we don't prematurely terminate the scope tested.
+        let scopeIndent = 0;
+
+        // This lets us know whether the scope closes properly. If it doesn't then the test fails.
+        let closedProperly = false;
+
+        let shouldBreak = false;
+
+        // Process the body here.
+        while (!isEOT() && !shouldBreak) {
+            token = tokens[++i];
+
+            // EOT
+            if (token === undefined) break;
+
+            const value = token.value.toLowerCase();
+            if (token.type === 'word' && SCOPE_RULES[value] !== undefined) {
+                // If there are rules for this word.
+                const result = intoScope(value, SCOPE_RULES[value]);
+
+                // Cascade catastrophic failures.
+                if (result === -1) return -1;
+                // Nominal result. Move on.
+                else if (result === 0) continue;
+                // If result is 1, it means there was a false-match and should be treated as a property key->value.
+            } else if (token.type === 'scope_open') {
+                scopeIndent++;
+                continue;
+            } else if (token.type === 'scope_close') {
+                if (scopeIndent === 0) {
+                    closedProperly = true;
+                    break;
+                }
+                scopeIndent--;
+            }
+            // At this point we need to interpret as "key -> value,"
+            else {
+                token = tokens[i];
+
+                const erroneousTokens = [];
+                // Scan into the next word. (skips over erroneous tokens)
+                while (!isEOT() && token.type !== 'scope_close') {
+                    if (token.type === 'word') {
+                        const tokenDelimiter = tokens[i + 1];
+
+                        // (Sanity Check)
+                        if (tokenDelimiter === undefined) {
+                            errorEOT();
+                            scope.pop();
+                            scopeToTrace.pop();
+                            return -1;
+                        }
+
+                        // Make sure that the 'key -> value' delimiter matches the scope rule.
+                        if (keyValDelimiter === ':' && tokenDelimiter.type === 'delimiter_equals') {
+                            expectValue(tokenDelimiter, '=');
+                        } else if (keyValDelimiter === '=' && tokenDelimiter.type === 'delimiter_colon') {
+                            expectValue(tokenDelimiter, ':');
+                        }
+
+                        const valueTokens = [];
+                        let offset = 2;
+                        let tokenNext = tokens[i + offset];
+
+                        while (
+                            tokenNext !== undefined &&
+                            tokenNext.type !== 'property_terminator' &&
+                            tokenNext.type !== 'scope_close'
+                        ) {
+                            valueTokens.push(tokenNext);
+                            offset++;
+                            tokenNext = tokens[i + offset];
+                        }
+
+                        // (Sanity Check)
+                        if (tokenNext === undefined || isEOT()) {
+                            errorEOT();
+                            scope.pop();
+                            scopeToTrace.pop();
+                            return -1;
+                        }
+
+                        if (intoProperty(token.value, valueTokens) === -1) return -1;
+
+                        // Since we have a valid property, catch up the index value.
+                        i += offset + 1;
+                        token = tokens[i];
+
+                        if (tokenNext.type === 'scope_close') {
+                            closedProperly = true;
+                            shouldBreak = true;
+                            break;
+                        }
+                    }
+                }
+
+                // (Sanity Check)
+                if (isEOT()) {
+                    errorEOT();
+                    scope.pop();
+                    scopeToTrace.pop();
+                    return -1;
+                }
+
+                if(token.type === 'scope_close') {
+                    closedProperly = true;
                     break;
                 }
 
-                // (Sanity Check)
-                if (isEOT()) {
-                    unexpectedEOT();
-                    return false;
-                }
-
-                // Check to see if the property is empty.
-                if (t.type !== 'property_terminator') {
-                    while (!isEOT()) {
-                        t = tokens[++i];
-                        if (t.type === 'property_terminator') {
-                            break;
-                        }
-                        propertyValue.push(t);
-                    }
-                }
-
-                // (Sanity Check)
-                if (isEOT()) {
-                    unexpectedEOT();
-                    return false;
-                }
-
-                scanProperty(propertyName, propertyValue);
-
-                // Set the proper index for the ruleset of the container to properly handle the next token.
-                if (t.type === 'property_terminator') {
-                    t = tokens[++i];
-                }
-
-                console.log(`[${t.loc.start.row}:${t.loc.start.col}] type: ${t.type}`);
+                // console.log(`Skipping over token: '${token.type}:${token.value}`);
             }
         }
 
-        // (Sanity Check)
-        if (isEOT()) {
-            unexpectedEOT();
-            return false;
+        // Make sure that the scope is closed properly. If one is missing, then the test has failed.
+        if (!closedProperly) {
+            error(EOFLocation, `The scope '${scopeToTrace.join('.')}' is missing a '}'.`);
+            return -1;
         }
 
-        return true;
+        if (DEBUG) console.log(`outOfScope(${value})`);
+        scope.pop();
+        scopeToTrace.pop();
+        return 0;
     }
-
-    /**
-     * Recursively scans through all tokens, checking their rules and seeing if these rules are followed.
-     *
-     * @returns True if the rules are followed in the level of recursion. If false, then the linter pass has failed and
-     * no further checks are needed. When failure occurs, this should fall back to the entry level of recursion.
-     */
-    function scanIntoScope(): boolean {
-        if (DEBUG) console.log('scanIntoScope()', t);
-
-        if (isEOT()) return false;
-
-        if (t.type === 'word') {
-            const rules = SCOPE_RULES[t.value.toLowerCase()];
-            if (rules == null) {
-                error(t.loc, `Unknown word: ${t.value}`);
-                return false;
-            }
-
-            // Go through conditional rules here.
-            for (const rule of rules) {
-                // Check 'scope:<scope>' rule.
-                if (rule.indexOf('scope:') === 0) {
-                    const ruleValue = rule.split(':')[1].toLowerCase().trim();
-                    if (scope.join('.') !== ruleValue) {
-                        expectScope(t, ruleValue);
-                    }
-                }
-            }
-
-            // Step into scope.
-            const scopeLower = t.value.toLowerCase().trim();
-            stepIntoScope(scopeLower);
-
-            // Go through sequential rules here.
-            for (const rule of rules) {
-                // Ignore non-sequence rules.
-                if (rule.indexOf('scope:') !== -1) continue;
-
-                switch (rule) {
-                    case 'word': {
-                        // Grab our next token by shifting 1 index.
-                        t = tokens[++i];
-                        t1 = tokens[i + 1];
-
-                        // (Sanity Check)
-                        if (isEOT()) {
-                            unexpectedEOT();
-                            return false;
-                        }
-
-                        // Check to make sure that the next token is a word.
-                        if (t.type !== 'word') expectWord(t);
-
-                        break;
-                    }
-
-                    // RULE: A series of 1 or more word tokens. (Recipe names, String property values, Vector3, etc.)
-                    case 'words': {
-                        // Grab our next token by shifting 1 index.
-                        t = tokens[++i];
-                        t1 = tokens[i + 1];
-
-                        // (Sanity Check)
-                        if (isEOT()) {
-                            unexpectedEOT();
-                            return false;
-                        }
-
-                        // Check to make sure that the next token is a word.
-                        if (t.type !== 'word') expectWords(t);
-
-                        // Skip until our next token is a non-word token.
-                        skipWords();
-
-                        // This is applied so that the next token is the non-word token when handled by the next rule.
-                        shift(-1);
-                        break;
-                    }
-                    case 'scope_open': {
-                        // Grab our next token by shifting 1 index.
-                        t = tokens[++i];
-                        t1 = tokens[i + 1];
-
-                        // (Sanity Check)
-                        if (isEOT()) {
-                            unexpectedEOT();
-                            return false;
-                        }
-
-                        if (t.type !== 'scope_open') expectValue(t, '{');
-                        break;
-                    }
-                    case 'scope_close': {
-                        // Grab our next token by shifting 1 index.
-                        t = tokens[++i];
-
-                        // (Sanity Check)
-                        if (isEOT()) {
-                            unexpectedEOT();
-                            return false;
-                        }
-
-                        if (t.type !== 'scope_close') expectValue(t, '}');
-                        i++;
-                        break;
-                    }
-                    case '*': {
-                        // Grab our next token by shifting 1 index.
-                        t = tokens[++i];
-
-                        // (Sanity Check)
-                        if (isEOT()) {
-                            unexpectedEOT();
-                            return false;
-                        }
-                        
-                        while(t.type !== 'scope_close') {
-                            console.log('next');
-                            if (!scanIntoScope()) return false;
-                        }
-                        break;
-                    }
-                    case '*:': {
-                        t = tokens[++i];
-
-                        // (Sanity Check)
-                        if (isEOT()) {
-                            unexpectedEOT();
-                            return false;
-                        }
-
-                        if (!scanIntoProperties(':')) return false;
-
-                        t = tokens[i];
-                        if(t.type !== 'scope_close') {
-                            expectValue(t, '}');
-                        } else {
-                            i--;
-                        }
-                        break;
-                    }
-                    case '*=': {
-                        // Grab our next token by shifting 1 index.
-                        t = tokens[++i];
-
-                        // (Sanity Check)
-                        if (isEOT()) {
-                            unexpectedEOT();
-                            return false;
-                        }
-
-                        if (!scanIntoProperties('=')) return false;
-                        
-                        t = tokens[i];
-                        console.log(t);
-                        if(t.type !== 'scope_close') {
-                            expectValue(t, '}');
-                        }
-
-                        i--;
-                        break;
-                    }
-                    default: {
-                        // `word:value` rule:
-                        if (rule.startsWith('word:')) {
-                            // Grab our next token by shifting 1 index.
-                            t = tokens[++i];
-                            t1 = tokens[i + 1];
-
-                            // (Sanity Check)
-                            if (isEOT()) {
-                                unexpectedEOT();
-                                return false;
-                            }
-
-                            const ruleValue = rule.split(':')[1].toLowerCase().trim();
-                            if (t.value.toLowerCase().trim() !== ruleValue) {
-                                expectValue(t, ruleValue);
-                            }
-                        }
-                        break;
-                    }
-                }
-            }
-
-            stepOutOfScope();
-            return true;
-        } else {
-            next();
-            return true;
-        }
-    }
-
-    // (Sets the initial token to lint)
-    shift(0);
 
     // Use a while loop here. This is because multiple modules can be defined in one file. If we reach and terminate our
     // recursive scan for the first module, then we end up in the loop to continue until we have reached the end of our
     // tokens.
-    while (!isEOT()) if (!scanIntoScope()) break;
+
+    do {
+        const token = tokens[i];
+        const value = token.value.toLowerCase();
+
+        if (SCOPE_RULES[value] !== undefined) {
+            if (!intoScope(value, SCOPE_RULES[value])) break;
+        } else {
+            i++;
+        }
+    } while (!isEOT());
 
     // The only way that the linter can pass is if ZERO logs are assigned the type 'error'.
     const pass =
@@ -527,5 +368,7 @@ export function lint3(tokens: Token3[]): Lint3Results {
             return o.type === 'error';
         }).length === 0;
 
-    return { pass, logs };
+    const result = { pass, logs };
+
+    return result;
 }
