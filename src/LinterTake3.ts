@@ -1,11 +1,14 @@
 import { Token3, Token3Location } from './TokenTake3';
 
+const CATASTROPHIC_ERROR = -1;
+
 const DEBUG = true;
 
 export type Lint3Log = {
     type: 'info' | 'warning' | 'error';
-    message: string;
     location: Token3Location;
+    scope: string;
+    message: string;
 };
 
 export type Lint3Results = {
@@ -13,27 +16,31 @@ export type Lint3Results = {
     logs: Lint3Log[];
 };
 
-const PROPERTY_EQUALS_RULE = [
-    'word', // Property name.
-    'delimiter_equals', // '='
-    'property_value', // Anything.
-    'property_terminator', // ','
-];
+export type Lint3ScopeRules = {
+    scope?: string;
+    title?: 'word' | 'words';
+    body?: '=' | ':';
+};
 
-const PROPERTY_COLON_RULE = [
-    'word', // Property name.
-    'delimiter_colon', // ':'
-    'property_value', // Anything.
-    'property_terminator', // ','
-];
+export type Lint3PropertyType = 'string' | 'int' | 'float' | 'boolean';
 
-const SCOPE_RULES: { [word: string]: string[] } = {
-    module: ['scope;root', 'title;word', 'body;category'],
+export type Lint3PropertyRules = {
+    scope: string;
+    type: Lint3PropertyType;
+};
+
+const SCOPE_RULES: { [word: string]: Lint3ScopeRules[] } = {
+    module: [{ scope: 'root', title: 'word' }],
 
     /** ANIMATION **************************************************** */
-    animation: ['scope;root.module', 'title;word', 'body;='],
-    copyframe: ['scope;root.module.animation', 'body;='],
-    copyframes: ['scope;root.module.animation', 'body;='],
+    animation: [{ scope: 'root.module', title: 'word', body: '=' }],
+    copyframe: [{ scope: 'root.module.animation', body: '=' }],
+    copyframes: [{ scope: 'root.module.animation', body: '=' }],
+};
+
+const PROP_RULES: { [word: string]: Lint3PropertyRules[] } = {
+    // root.module.animation.copyframe
+    frame: [{ scope: 'root.module.animation.copyframe', type: 'int' }],
 };
 
 export function stripWhiteSpace(tokens: Token3[]): Token3[] {
@@ -69,15 +76,15 @@ export function lint3(tokens: Token3[]): Lint3Results {
 
     function error(location: Token3Location, message: string) {
         if (DEBUG) throw new Error(`[${location.start.row}:${location.start.col}]: ${message}`);
-        logs.push({ type: 'error', location, message });
+        logs.push({ scope: scopeToTrace.join('.'), type: 'error', location, message });
     }
 
     function warning(location: Token3Location, message: string) {
-        logs.push({ type: 'warning', location, message });
+        logs.push({ scope: scopeToTrace.join('.'), type: 'warning', location, message });
     }
 
     function info(location: Token3Location, message: string) {
-        logs.push({ type: 'info', location, message });
+        logs.push({ scope: scopeToTrace.join('.'), type: 'info', location, message });
     }
 
     function expectWord(token: Token3) {
@@ -134,7 +141,94 @@ export function lint3(tokens: Token3[]): Lint3Results {
         }
     }
 
-    function intoProperty(key: string, value: Token3[]): number {
+    /**
+     * Checks if a property is a scope. If so, the scope is scanned over.
+     *
+     * @param loc The location of the property token.
+     * @param value The name of the property.
+     * @returns {number} -1 if catastrophic error, 0 if false, 1 if true.
+     */
+    function scanOverIfUnknownScope(loc: Token3Location, value: string): number {
+        // Check to see if a 'scope_open' token follows prior to a 'scope_close' token. If so, this means that
+        // this is a scope but isn't one that we know about. In this situation, we simply scan past it and move
+        // on.
+
+        let testToken;
+        let testIndex = i + 1;
+        let testScopeIndent = 0;
+        let hasScope = false;
+
+        while (!isEOT()) {
+            testToken = tokens[testIndex++];
+            if (testToken === undefined) {
+                if (hasScope) {
+                    error(loc, `Expected '}' for closing scope: ${value}`);
+                } else {
+                    errorEOT();
+                }
+                return CATASTROPHIC_ERROR;
+            }
+
+            // This is confirmed to be a property.
+            if ((!hasScope && testToken.type === 'delimiter_equals') || testToken.type === 'delimiter_colon') {
+                break;
+            }
+
+            if (testToken.type === 'scope_open') {
+                testScopeIndent++;
+                hasScope = true;
+                continue;
+            } else if (testToken.type === 'scope_close') {
+                if (testScopeIndent === 0) {
+                    break;
+                }
+                testScopeIndent--;
+            }
+        }
+
+        // We confirmed that the item is a scope.
+        if (hasScope) {
+            console.log('Confirmed hasScope. Left at: ');
+            i = testIndex - 1;
+            console.log(tokens[i]);
+            return 1;
+        }
+
+        return 0;
+    }
+
+    function intoProperty(loc: Token3Location, key: string, value: Token3[]): number {
+        const rulesAll = PROP_RULES[key];
+        console.log({ key, rulesAll });
+        let rules: Lint3PropertyRules | null = null;
+
+        if (rulesAll !== undefined) {
+            for (const rulesNext of rulesAll) {
+                if (rulesNext.scope === scope.join('.')) {
+                    rules = rulesNext;
+                    break;
+                }
+            }
+        }
+
+        // No rules found or satisfied the scope requirement for the key->value pair.
+        if (rules == null) {
+            // Check to see if the unknown property is a scope.
+            const scopeCheck = scanOverIfUnknownScope(loc, key);
+
+            // Cascade catastrophic failure.
+            if (scopeCheck === CATASTROPHIC_ERROR) return CATASTROPHIC_ERROR;
+
+            if (scopeCheck === 1) {
+                warning(loc, `Unknown scope: ${key}`);
+                if (DEBUG) console.log(`[${scopeToTrace.join('.')}] :: Unknown Scope Detected: ${key}`);
+            } else {
+                warning(loc, `Unknown property: ${key}`);
+                if (DEBUG) console.log(`[${scopeToTrace.join('.')}] :: Unknown Property Detected: ${key}`);
+            }
+            return 1;
+        }
+
         const valString = value
             .map((o) => {
                 return o.value;
@@ -144,26 +238,24 @@ export function lint3(tokens: Token3[]): Lint3Results {
         return 0;
     }
 
-    function intoScope(value: string, rules: string[]): number {
+    function intoScope(value: string, rules: Lint3ScopeRules): number {
         if (DEBUG) console.log(`intoScope(${value})`);
         let hasTitle = false;
         let titleType: 'word' | 'words' = 'word';
         let keyValDelimiter: '=' | ':' = '=';
         let scopeRequired: string | null = null;
 
-        for (let rule of rules) {
-            rule = rule.toLowerCase();
-            if (rule.indexOf('body;') === 0) {
-                keyValDelimiter = rule.split(';')[1] as '=' | ':';
-            } else if (rule.indexOf('title;') === 0) {
-                hasTitle = true;
-                titleType = rule.split(';')[1] as 'word' | 'words';
-            } else if (rule.indexOf('scope;') === 0) {
-                scopeRequired = rule.split(';')[1];
-            }
+        if (rules.body != null) {
+            keyValDelimiter = rules.body!;
+        }
+        if (rules.title != null) {
+            hasTitle = true;
+            titleType = rules.title!;
         }
 
-        if (scopeRequired !== null) {
+        // If scope is defined, check to see if this ruleset requirement is met.
+        if (rules.scope) {
+            scopeRequired = rules.scope!;
             if (scope.join('.') !== scopeRequired) {
                 // We need to interpret this return as non-fatal.
                 return 1;
@@ -181,7 +273,7 @@ export function lint3(tokens: Token3[]): Lint3Results {
                 expectWord(token);
                 scope.pop();
                 scopeToTrace.pop();
-                return -1;
+                return CATASTROPHIC_ERROR;
             } else if (titleType === 'words') {
                 title = token.value;
                 // Skip word tokens.
@@ -195,7 +287,7 @@ export function lint3(tokens: Token3[]): Lint3Results {
                     expectValue(token, '{');
                     scope.pop();
                     scopeToTrace.pop();
-                    return -1;
+                    return CATASTROPHIC_ERROR;
                 }
             } else {
                 title = token.value;
@@ -206,7 +298,7 @@ export function lint3(tokens: Token3[]): Lint3Results {
                     expectValue(token, '{');
                     scope.pop();
                     scopeToTrace.pop();
-                    return -1;
+                    return CATASTROPHIC_ERROR;
                 }
             }
             scopeToTrace.push(`${value}[${title}]`);
@@ -217,7 +309,7 @@ export function lint3(tokens: Token3[]): Lint3Results {
                 expectValue(token, '{');
                 scope.pop();
                 scopeToTrace.pop();
-                return -1;
+                return CATASTROPHIC_ERROR;
             }
         }
 
@@ -239,13 +331,15 @@ export function lint3(tokens: Token3[]): Lint3Results {
             const value = token.value.toLowerCase();
             if (token.type === 'word' && SCOPE_RULES[value] !== undefined) {
                 // If there are rules for this word.
-                const result = intoScope(value, SCOPE_RULES[value]);
+                // TODO: Check all variants.
+                const result = intoScope(value, SCOPE_RULES[value][0]);
 
                 // Cascade catastrophic failures.
-                if (result === -1) return -1;
+                if (result === CATASTROPHIC_ERROR) return CATASTROPHIC_ERROR;
                 // Nominal result. Move on.
                 else if (result === 0) continue;
-                // If result is 1, it means there was a false-match and should be treated as a property key->value.
+
+                // If result is 1, it means there was a false-match and could be a property key->value.
             } else if (token.type === 'scope_open') {
                 scopeIndent++;
                 continue;
@@ -260,9 +354,41 @@ export function lint3(tokens: Token3[]): Lint3Results {
             else {
                 token = tokens[i];
 
-                const erroneousTokens = [];
+                const errorTokens = [];
+
                 // Scan into the next word. (skips over erroneous tokens)
                 while (!isEOT() && token.type !== 'scope_close') {
+                    while (!isEOT() && token.type !== 'word') {
+                        errorTokens.push(token);
+                        token = tokens[++i];
+
+                        // EOT
+                        if (token === undefined) break;
+
+                        if (token.type === 'scope_open') {
+                            scopeIndent++;
+                            continue;
+                        } else if (token.type === 'scope_close') {
+                            if (scopeIndent === 0) {
+                                closedProperly = true;
+                                shouldBreak = true;
+                                break;
+                            }
+                            scopeIndent--;
+                        }
+                    }
+
+                    // (Sanity Check)
+                    if (isEOT()) {
+                        errorEOT();
+                        scope.pop();
+                        scopeToTrace.pop();
+                        return CATASTROPHIC_ERROR;
+                    }
+
+                    // Catch for closure of scope with erroneous tokens.
+                    if (shouldBreak) break;
+
                     if (token.type === 'word') {
                         const tokenDelimiter = tokens[i + 1];
 
@@ -271,7 +397,7 @@ export function lint3(tokens: Token3[]): Lint3Results {
                             errorEOT();
                             scope.pop();
                             scopeToTrace.pop();
-                            return -1;
+                            return CATASTROPHIC_ERROR;
                         }
 
                         // Make sure that the 'key -> value' delimiter matches the scope rule.
@@ -300,10 +426,18 @@ export function lint3(tokens: Token3[]): Lint3Results {
                             errorEOT();
                             scope.pop();
                             scopeToTrace.pop();
-                            return -1;
+                            return CATASTROPHIC_ERROR;
                         }
 
-                        if (intoProperty(token.value, valueTokens) === -1) return -1;
+                        const result = intoProperty(token.loc, token.value, valueTokens);
+                        if (result === CATASTROPHIC_ERROR) return CATASTROPHIC_ERROR;
+
+                        // If an unknown scope is detected, we check for closure here.
+                        if (tokens[i].type === 'scope_close') {
+                            closedProperly = true;
+                            shouldBreak = true;
+                            break;
+                        }
 
                         // Since we have a valid property, catch up the index value.
                         i += offset + 1;
@@ -317,15 +451,22 @@ export function lint3(tokens: Token3[]): Lint3Results {
                     }
                 }
 
+                // Process erroneous tokens. (If any)
+                if (errorTokens.length !== 0) {
+                    for (const errorToken of errorTokens) {
+                        error(errorToken.loc, `Unknown token: ${errorToken.value}`);
+                    }
+                }
+
                 // (Sanity Check)
                 if (isEOT()) {
                     errorEOT();
                     scope.pop();
                     scopeToTrace.pop();
-                    return -1;
+                    return CATASTROPHIC_ERROR;
                 }
 
-                if(token.type === 'scope_close') {
+                if (token.type === 'scope_close') {
                     closedProperly = true;
                     break;
                 }
@@ -337,7 +478,7 @@ export function lint3(tokens: Token3[]): Lint3Results {
         // Make sure that the scope is closed properly. If one is missing, then the test has failed.
         if (!closedProperly) {
             error(EOFLocation, `The scope '${scopeToTrace.join('.')}' is missing a '}'.`);
-            return -1;
+            return CATASTROPHIC_ERROR;
         }
 
         if (DEBUG) console.log(`outOfScope(${value})`);
@@ -355,7 +496,8 @@ export function lint3(tokens: Token3[]): Lint3Results {
         const value = token.value.toLowerCase();
 
         if (SCOPE_RULES[value] !== undefined) {
-            if (!intoScope(value, SCOPE_RULES[value])) break;
+            // TODO: Check all variants.
+            if (!intoScope(value, SCOPE_RULES[value][0])) break;
         } else {
             i++;
         }
