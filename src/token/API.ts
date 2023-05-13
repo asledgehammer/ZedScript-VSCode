@@ -1,43 +1,11 @@
-import { Format3Options } from './FormatTake3';
+import { FormatOptions } from "../format/FormatOptions";
+import { Token } from "./Token";
+import { TokenCursor } from "./TokenCursor";
+import { TokenType } from "./TokenType";
 
 export const FAKE_CURSOR = { row: -1, col: -1 };
 export const FAKE_LOC = { start: FAKE_CURSOR, stop: FAKE_CURSOR };
-
-export type Token3Type =
-    | 'white_space' // ' ', '\t', etc. (/\s/g)
-    | 'new_line' // '\n'
-    | 'scope_open' // '{'
-    | 'scope_close' // '}'
-    | 'property_terminator' // ','
-    | 'delimiter_equals' // '='
-    | 'delimiter_colon' // ':'
-    | 'delimiter_semicolon' // ';'
-    | 'delimiter_slash' // '/'
-    | 'comment_block_open' // '/*'
-    | 'comment_block_close' // '*/'
-    | 'comment_block' //
-    | 'comment_line_open' // '//'
-    | 'comment_line' //
-    | 'word' // /([a-z|A-Z|0-9|_|-]+)
-    | 'unknown'; // ?
-
-export type Token3Cursor = {
-    row: number;
-    col: number;
-};
-
-export type Token3Location = {
-    start: Token3Cursor;
-    stop: Token3Cursor;
-};
-
-export type Token3 = {
-    loc: Token3Location;
-    value: string;
-    type: Token3Type;
-};
-
-export const CHAR_DICT: { [char: string]: Token3Type } = {
+export const CHAR_DICT: { [char: string]: TokenType } = {
     '\n': 'new_line',
     '{': 'scope_open',
     '}': 'scope_close',
@@ -48,11 +16,11 @@ export const CHAR_DICT: { [char: string]: Token3Type } = {
     '/': 'delimiter_slash',
 };
 
-export function tokenize3(raw: string, options: Format3Options): Token3[] {
+export function tokenize(raw: string, options: FormatOptions): Token[] {
     // Keeps returns consistent across encoding.
-    raw = raw.replace(/\r/g, ''); //.replace('/\t/g', ' '.repeat(options.indentSize));
+    raw = raw.replace(/\r/g, '');
 
-    function getCursor(index: number): Token3Cursor {
+    function getCursor(index: number): TokenCursor {
         let row = 1;
         let col = 1;
         for (let i = 0; i < Math.min(raw.length, index); i++) {
@@ -74,8 +42,8 @@ export function tokenize3(raw: string, options: Format3Options): Token3[] {
     let inComment = false;
     let inCommentType: 'line' | 'block' | undefined;
 
-    const tokens: Token3[] = [];
-    let token: Token3 | undefined;
+    const tokens: Token[] = [];
+    let token: Token | undefined;
 
     function isValidToken() {
         return token != null && token.type !== 'unknown' && token.value !== '';

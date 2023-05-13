@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import { tokenize } from './API';
 import { LexerToken } from './Lexer';
 import { AnimationScope } from './scope/Animation';
 import { AnimationsMeshScope } from './scope/AnimationsMesh';
@@ -7,53 +6,63 @@ import { ItemScope } from './scope/item/ItemScope';
 import { ModuleScope } from './scope/Module';
 import { RecipeScope } from './scope/Recipe';
 import { getScope, getTokenAt, ScriptScope } from './scope/Scope';
-import { tokenize3 } from './TokenTake3';
-import { format3, Format3Options } from './FormatTake3';
-import { lint3 } from './LinterTake3';
+import { lint3 } from './lint/APILegacy';
+import { FormatOptions } from './format/FormatOptions';
+import { format } from './format/API';
+import { lint } from './lint/API';
+import { tokenize } from './token/API';
+
+import * as LegacyAPI from './API';
 
 const DEBUG = false;
 
 export function activate(context: vscode.ExtensionContext) {
     // DIAGNOSTICS
     function createFix(document: vscode.TextDocument, range: vscode.Range, text: string): vscode.CodeAction {
-        const fix = new vscode.CodeAction(text, vscode.CodeActionKind.QuickFix);
+        // const fix = new vscode.CodeAction(text, vscode.CodeActionKind.QuickFix);
+        // fix.edit = new vscode.WorkspaceEdit();
+        // fix.edit.replace(document.uri, range, text);
+        // return fix;
+
+        const fix = new vscode.CodeAction(text, vscode.CodeActionKind.Refactor);
         fix.edit = new vscode.WorkspaceEdit();
+        fix.diagnostics = [new vscode.Diagnostic(range, 'diag', vscode.DiagnosticSeverity.Error)];
         fix.edit.replace(document.uri, range, text);
         return fix;
     }
 
-    // vscode.languages.registerCodeActionsProvider(
-    //     'zed',
-    //     {
-    //         provideCodeActions: function (
-    //             document: vscode.TextDocument,
-    //             range: vscode.Range | vscode.Selection,
-    //             context: vscode.CodeActionContext,
-    //             token: vscode.CancellationToken
-    //         ): vscode.ProviderResult<(vscode.CodeAction | vscode.Command)[]> {
-    //             const _range = new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 'module'.length));
-    //             const fix = createFix(document, _range, 'Hello, world!');
-    //             return [fix];
-    //         },
-    //     },
-    //     { providedCodeActionKinds: [vscode.CodeActionKind.QuickFix] }
-    // );
+    vscode.languages.registerCodeActionsProvider(
+        'zed',
+        {
+            provideCodeActions: function (
+                document: vscode.TextDocument,
+                range: vscode.Range | vscode.Selection,
+                context: vscode.CodeActionContext,
+                token: vscode.CancellationToken
+            ): vscode.ProviderResult<(vscode.CodeAction | vscode.Command)[]> {
+                const _range = new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 'module'.length));
+                const fix = createFix(document, _range, 'Hello, world!');
+                return [fix];
+            },
+        },
+        { providedCodeActionKinds: [vscode.CodeActionKind.QuickFix] }
+    );
 
     // FORMATTER
     vscode.languages.registerDocumentFormattingEditProvider('zed', {
         provideDocumentFormattingEdits(document: vscode.TextDocument): vscode.TextEdit[] {
             try {
-                const options: Format3Options = {
+                const options: FormatOptions = {
                     indentSize: vscode.window.activeTextEditor?.options.tabSize as number,
                     bracketStyle: 'inline',
                     propertyCasing: 'pascal_case',
                 };
 
-                const t3 = tokenize3(document.getText(), options);
-                const l3 = lint3(t3);
+                const t3 = tokenize(document.getText(), options);
+                const l3 = lint(t3);
                 console.log(JSON.stringify(l3.logs, null, 4));
-                
-                const f3 = format3(t3, options);
+
+                // const f3 = format(t3, options);
 
                 const editor = vscode.window.activeTextEditor!;
                 const position = editor!.selection.active;
@@ -70,7 +79,6 @@ export function activate(context: vscode.ExtensionContext) {
                     document.positionAt(document.getText().length)
                 );
 
-            
                 if (DEBUG) {
                     return [
                         vscode.TextEdit.delete(range),
@@ -80,6 +88,7 @@ export function activate(context: vscode.ExtensionContext) {
                 return [];
                 // return [vscode.TextEdit.replace(range, f3)];
             } catch (err) {
+                vscode.window.showErrorMessage('Error Making API Call');
                 console.error(err);
             }
             return [];
@@ -89,12 +98,12 @@ export function activate(context: vscode.ExtensionContext) {
     const hover1 = vscode.languages.registerHoverProvider('zed', {
         provideHover(document: vscode.TextDocument, position: vscode.Position, _: vscode.CancellationToken) {
             try {
-                if(DEBUG) return;
+                if (DEBUG) return;
                 const enabled = vscode.workspace.getConfiguration('zedscript').get('hoverPopupEnabled');
                 if (!enabled) {
                     return;
                 }
-                const tokens = tokenize(document.getText());
+                const tokens = LegacyAPI.tokenize(document.getText());
                 const token = getTokenAt(document, position, tokens);
                 const [scope, name, type] = getScope(document, position, tokens);
                 return new vscode.Hover(new vscode.MarkdownString(hover(scope, token, { type })));
@@ -112,7 +121,7 @@ export function activate(context: vscode.ExtensionContext) {
             __: vscode.CompletionContext
         ) {
             try {
-                const tokens = tokenize(document.getText());
+                const tokens = LegacyAPI.tokenize(document.getText());
                 const phrase = document.lineAt(position.line).text.trim().toLowerCase();
                 const [scope, name, type] = getScope(document, position, tokens);
 
@@ -131,6 +140,87 @@ export function activate(context: vscode.ExtensionContext) {
             // commandCompletion.command = { command: 'editor.action.triggerSuggest', title: 'Re-trigger completions...' };
         },
     });
+
+    const zedDiagnostics = vscode.languages.createDiagnosticCollection('ZedScript');
+
+    function refreshDiagnostics(document: vscode.TextDocument): void {
+        const diagnostics: vscode.Diagnostic[] = [];
+
+        const options: FormatOptions = {
+            indentSize: vscode.window.activeTextEditor?.options.tabSize as number,
+            bracketStyle: 'inline',
+            propertyCasing: 'pascal_case',
+
+
+        };
+
+        const t3 = tokenize(document.getText(), options);
+        const l3 = lint(t3);
+        console.log(JSON.stringify(l3.logs, null, 4));
+
+        for (const log of l3.logs) {
+            const { location } = log;
+            const { start, stop } = location;
+            const r = new vscode.Range(
+                new vscode.Position(start.row, start.col),
+                new vscode.Position(stop.row, stop.col)
+            );
+            let s: vscode.DiagnosticSeverity = vscode.DiagnosticSeverity.Error;
+            switch (log.type) {
+                case 'warning': {
+                    s = vscode.DiagnosticSeverity.Warning;
+                    break;
+                }
+                case 'info': {
+                    s = vscode.DiagnosticSeverity.Information;
+                    break;
+                }
+                default: {
+                    s = vscode.DiagnosticSeverity.Error;
+                }
+            }
+            diagnostics.push(new vscode.Diagnostic(r, log.message, s));
+        }
+
+        // const diagnostic = new vscode.Diagnostic(
+        //     new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 'module'.length)),
+        //     'Hi!'
+        // );
+        // diagnostics.push(diagnostic);
+
+        zedDiagnostics.set(document.uri, diagnostics);
+    }
+
+    if (vscode.window.activeTextEditor) {
+        refreshDiagnostics(vscode.window.activeTextEditor.document);
+    }
+    context.subscriptions.push(
+        vscode.window.onDidChangeActiveTextEditor((editor) => {
+            if (editor) {
+                refreshDiagnostics(editor.document);
+            }
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.workspace.onDidOpenTextDocument((document: vscode.TextDocument) => {
+            refreshDiagnostics(document);
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.workspace.onDidCloseTextDocument((document: vscode.TextDocument) => {
+            console.log(`onClose`);
+            zedDiagnostics.delete(document.uri);
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
+            console.log(`onChange`);
+            refreshDiagnostics(event.document);
+        })
+    );
 
     context.subscriptions.push(provider1, hover1);
 }

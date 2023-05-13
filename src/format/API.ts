@@ -1,52 +1,52 @@
-import { FAKE_LOC, Token3, Token3Type } from './TokenTake3';
+import { FAKE_LOC } from '../token/API';
+import { Token } from '../token/Token';
+import { TokenType } from '../token/TokenType';
+import { FormatMetadata } from './FormatMetadata';
+import { FormatOptions } from './FormatOptions';
 
-export type Format3Options = {
-    bracketStyle: 'inline' | 'allman';
-    propertyCasing: 'camel_case' | 'pascal_case';
-    indentSize: number;
-};
-
-export type Format3Metadata = {
-    indent: number;
-    index: number;
-};
-
-const DEFAULT_FORMAT3_OPTIONS: Format3Options = {
+const DEFAULT_FORMAT_OPTIONS: FormatOptions = {
     bracketStyle: 'inline',
     propertyCasing: 'pascal_case',
     indentSize: 4,
 };
 
-function inject(tokens: Token3[], type: Token3Type, value: string) {
-    tokens.push({
-        type,
-        value,
-        loc: FAKE_LOC,
+export function format(tokens: Token[], options: Partial<FormatOptions>): string {
+    // Clone the tokens to not poison the original tokens passed.
+    tokens = tokens.map((o) => {
+        return { ...o };
     });
-}
 
-function isEmptyLine(tokens: Token3[], index: number): boolean {
-    while (index < tokens.length) {
-        const next = tokens[index++];
-        if (next == null) return true;
-        else if (next.type === 'white_space') continue;
-        else if (next.type === 'new_line') return true;
-        else return false;
+    // Insert default options to complete.
+    const optionsAll: FormatOptions = { ...DEFAULT_FORMAT_OPTIONS, ...options };
+
+    const tokensNew: Token[] = [];
+
+    // Non-Invasive loop
+
+    for (let i = 0; i < tokens.length; i++) {
+        const t = tokens[i];
+        // Convert tabs to spaces internally to better-manage the formatting process with white_spaces.
+        t.value = t.value.replace(/\t/g, ' '.repeat(optionsAll.indentSize));
     }
-    return true;
+
+    const meta = { indent: 0, index: 0 };
+
+    // Invasive loop.
+    for (; meta.index < tokens.length; meta.index++) {
+        let add = true;
+        if (!formatScope(optionsAll, tokens, tokensNew, meta)) add = false;
+        if (!formatIndent(optionsAll, tokens, tokensNew, meta)) add = false;
+        if (add) tokensNew.push(tokens[meta.index]);
+    }
+
+    return tokensNew
+        .map((o: Token) => {
+            return o.value;
+        })
+        .join('');
 }
 
-function injectNewLine(tokens: Token3[]) {
-    inject(tokens, 'new_line', '\n');
-}
-
-function injectCommentLine(tokens: Token3[], value: string) {
-    inject(tokens, 'comment_line_open', '//');
-    inject(tokens, 'comment_line', value);
-    injectNewLine(tokens);
-}
-
-function formatIndent(options: Format3Options, tokens: Token3[], tokensNew: Token3[], meta: Format3Metadata): boolean {
+function formatIndent(options: FormatOptions, tokens: Token[], tokensNew: Token[], meta: FormatMetadata): boolean {
     const t = tokens[meta.index];
 
     let spaceLength = options.indentSize * meta.indent;
@@ -219,7 +219,7 @@ function formatIndent(options: Format3Options, tokens: Token3[], tokensNew: Toke
     return true;
 }
 
-function formatScope(options: Format3Options, tokens: Token3[], tokensNew: Token3[], meta: Format3Metadata): boolean {
+function formatScope(options: FormatOptions, tokens: Token[], tokensNew: Token[], meta: FormatMetadata): boolean {
     const t = tokens[meta.index];
     let tn1 = tokens[meta.index + 1];
 
@@ -266,44 +266,7 @@ function formatScope(options: Format3Options, tokens: Token3[], tokensNew: Token
     return true;
 }
 
-export function format3(tokens: Token3[], options: Partial<Format3Options>): string {
-    
-    // Clone the tokens to not poison the original tokens passed.
-    tokens = tokens.map((o) => {
-        return { ...o };
-    });
-
-    // Insert default options to complete.
-    const optionsAll: Format3Options = { ...DEFAULT_FORMAT3_OPTIONS, ...options };
-
-    const tokensNew: Token3[] = [];
-
-    // Non-Invasive loop
-
-    for (let i = 0; i < tokens.length; i++) {
-        const t = tokens[i];
-        // Convert tabs to spaces internally to better-manage the formatting process with white_spaces.
-        t.value = t.value.replace(/\t/g, ' '.repeat(optionsAll.indentSize));
-    }
-
-    const meta = { indent: 0, index: 0 };
-
-    // Invasive loop.
-    for (; meta.index < tokens.length; meta.index++) {
-        let add = true;
-        if (!formatScope(optionsAll, tokens, tokensNew, meta)) add = false;
-        if (!formatIndent(optionsAll, tokens, tokensNew, meta)) add = false;
-        if (add) tokensNew.push(tokens[meta.index]);
-    }
-
-    return tokensNew
-        .map((o: Token3) => {
-            return o.value;
-        })
-        .join('');
-}
-
-function isFirstNonWhitespace(tokens: Token3[], index: number): boolean {
+function isFirstNonWhitespace(tokens: Token[], index: number): boolean {
     if (tokens.length === 0 || index === 0) return true;
 
     while (index > 0) {
@@ -315,7 +278,7 @@ function isFirstNonWhitespace(tokens: Token3[], index: number): boolean {
     return true;
 }
 
-function removeNewLinePriorTo(tokens: Token3[], index: number) {
+function removeNewLinePriorTo(tokens: Token[], index: number) {
     if (tokens.length === 0 || index === 0) return;
 
     while (index > 0) {
@@ -325,4 +288,33 @@ function removeNewLinePriorTo(tokens: Token3[], index: number) {
             return;
         }
     }
+}
+
+function inject(tokens: Token[], type: TokenType, value: string) {
+    tokens.push({
+        type,
+        value,
+        loc: FAKE_LOC,
+    });
+}
+
+function isEmptyLine(tokens: Token[], index: number): boolean {
+    while (index < tokens.length) {
+        const next = tokens[index++];
+        if (next == null) return true;
+        else if (next.type === 'white_space') continue;
+        else if (next.type === 'new_line') return true;
+        else return false;
+    }
+    return true;
+}
+
+function injectNewLine(tokens: Token[]) {
+    inject(tokens, 'new_line', '\n');
+}
+
+function injectCommentLine(tokens: Token[], value: string) {
+    inject(tokens, 'comment_line_open', '//');
+    inject(tokens, 'comment_line', value);
+    injectNewLine(tokens);
 }
