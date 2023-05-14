@@ -146,6 +146,8 @@ export function activate(context: vscode.ExtensionContext) {
     function refreshDiagnostics(document: vscode.TextDocument): void {
         const diagnostics: vscode.Diagnostic[] = [];
 
+        console.log({tabSize: vscode.window.activeTextEditor?.options.tabSize});
+
         const options: FormatOptions = {
             indentSize: vscode.window.activeTextEditor?.options.tabSize as number,
             bracketStyle: 'inline',
@@ -162,8 +164,8 @@ export function activate(context: vscode.ExtensionContext) {
             const { location } = log;
             const { start, stop } = location;
             const r = new vscode.Range(
-                new vscode.Position(start.row, start.col),
-                new vscode.Position(stop.row, stop.col)
+                new vscode.Position(start.row - 1, start.col - 1),
+                new vscode.Position(stop.row - 1, stop.col - 1)
             );
             let s: vscode.DiagnosticSeverity = vscode.DiagnosticSeverity.Error;
             switch (log.type) {

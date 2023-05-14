@@ -1,15 +1,17 @@
 import { Token } from '../../token/Token';
 import { TokenCursor } from '../../token/TokenCursor';
 import { TokenLocation } from '../../token/TokenLocation';
+import { LintBag } from '../LintBag';
 import { LintResults } from '../LintResults';
-import { LintPhase } from './LintPhase';
+import { LintCheck } from './LintCheck';
 
-export class LintScopeClosureCheck extends LintPhase {
+export class LintScopeClosureCheck extends LintCheck {
     constructor() {
-        super('Bracket Phase');
+        super('Scope Closure Check');
     }
 
-    onTest(tokens: Token[], results: LintResults): void {
+    onTest(bag: LintBag, results: LintResults): void {
+        const { tokens } = bag;
         let indent = 0;
         let tokenLast: Token = tokens[0];
         for (const next of tokens) {

@@ -29,7 +29,9 @@ export function tokenize(raw: string, options: FormatOptions): Token[] {
                 row++;
                 col = 1;
             } else if (c === '\t') {
-                col += options.indentSize;
+                col++;
+                // VSCode apparently tranforms tabs as 1-col regardless..
+                //col += options.indentSize - 2;
             } else {
                 col++;
             }

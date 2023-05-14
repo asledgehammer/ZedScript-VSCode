@@ -44,7 +44,7 @@ export class LintBag {
      */
     seek(amount = 1): Token {
         // (Sanity Check)
-        if (this.isEOT()) throw new Error('Unexpected EOF.');
+        // if (this.isEOT()) throw new Error('Unexpected EOF.');
 
         const offsetTransformed = this.offset + amount;
         if (offsetTransformed < 0) {
@@ -56,7 +56,7 @@ export class LintBag {
         this.offset = offsetTransformed;
 
         // (Sanity Check)
-        if (this.isEOT()) throw new Error('Unexpected EOF.');
+        // if (this.isEOT()) throw new Error('Unexpected EOF.');
 
         return this.tokens[this.offset];
     }
@@ -71,7 +71,7 @@ export class LintBag {
      */
     peek(offset = 0): Token {
         // (Sanity Check)
-        if (this.isEOT()) throw new Error('Unexpected EOF.');
+        // if (this.isEOT()) throw new Error('Unexpected EOF.');
 
         const offsetTransformed = this.offset + offset;
         if (offsetTransformed < 0) {
@@ -81,7 +81,7 @@ export class LintBag {
         }
 
         // (Sanity Check)
-        if (this.isEOT(offsetTransformed)) throw new Error('Unexpected EOF.');
+        // if (this.isEOT(offsetTransformed)) throw new Error('Unexpected EOF.');
 
         return this.tokens[offsetTransformed];
     }
@@ -93,7 +93,7 @@ export class LintBag {
      */
     next(): Token {
         // (Sanity Check)
-        if (this.isEOT()) throw new Error('Unexpected EOF.');
+        // if (this.isEOT()) throw new Error('Unexpected EOF.');
 
         return this.seek(1);
     }
@@ -105,7 +105,7 @@ export class LintBag {
      */
     prev(): Token {
         // (Sanity Check)
-        if (this.isEOT()) throw new Error('Unexpected EOF.');
+        // if (this.isEOT()) throw new Error('Unexpected EOF.');
 
         return this.seek(-1);
     }
@@ -120,7 +120,7 @@ export class LintBag {
      */
     untilType(type: TokenType): Token {
         // (Sanity Check)
-        if (this.isEOT()) throw new Error('Unexpected EOF.');
+        // if (this.isEOT()) throw new Error('Unexpected EOF.');
 
         // Loop through until the next token is found with the matching value.
         while (!this.isEOT() && this.tokens[this.offset].type !== type) {
@@ -128,7 +128,7 @@ export class LintBag {
         }
 
         // (Sanity Check)
-        if (this.isEOT()) throw new Error('Unexpected EOF.');
+        // if (this.isEOT()) throw new Error('Unexpected EOF.');
 
         return this.tokens[this.offset];
     }
@@ -144,7 +144,7 @@ export class LintBag {
      */
     untilValue(value: string, caseSensitive = false): Token {
         // (Sanity Check)
-        if (this.isEOT()) throw new Error('Unexpected EOF.');
+        // if (this.isEOT()) throw new Error('Unexpected EOF.');
 
         // (If not case-sensitive, check in lower-case)
         if (!caseSensitive) value = value.toLowerCase();
@@ -158,7 +158,7 @@ export class LintBag {
         }
 
         // (Sanity Check)
-        if (this.isEOT()) throw new Error('Unexpected EOF.');
+        // if (this.isEOT()) throw new Error('Unexpected EOF.');
 
         return this.tokens[this.offset];
     }

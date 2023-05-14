@@ -1,5 +1,5 @@
 export type LintScopeRules = {
-    scope?: string;
+    scope: string;
+    body: '=' | ':' | 'scope_only' | 'recipe' | 'imports';
     title?: 'word' | 'words';
-    body?: '=' | ':';
 };

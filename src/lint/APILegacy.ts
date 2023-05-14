@@ -11,7 +11,7 @@ const SUCCESS = 0;
 const ANOMALOUS = 1;
 
 const SCOPE_RULES: { [word: string]: LintScopeRules[] } = {
-    module: [{ scope: 'root', title: 'word' }],
+    module: [{ scope: 'root', title: 'word', body: 'scope_only' }],
 
     /** ANIMATION **************************************************** */
     animation: [{ scope: 'root.module', title: 'word', body: '=' }],
@@ -233,7 +233,7 @@ export function lint3(tokens: Token[]): LintResults {
         if (DEBUG) console.log(`intoScope(${value})`);
         let hasTitle = false;
         let titleType: 'word' | 'words' = 'word';
-        let keyValDelimiter: '=' | ':' = '=';
+        let keyValDelimiter: '=' | ':' | 'scope_only' | 'imports' | 'recipe' = '=';
         let scopeRequired: string | null = null;
 
         if (rules.body != null) {
