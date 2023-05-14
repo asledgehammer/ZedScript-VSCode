@@ -2,6 +2,8 @@ import { LintPropertyRules } from './LintPropertyRules';
 import { LintScopeRules } from './LintScopeRules';
 
 export const SCOPE_RULES: { [word: string]: LintScopeRules[] } = {
+
+    /** MODULE ******************************************************* */
     module: [{ scope: 'root', title: 'word', body: 'scope_only' }],
     imports: [{ scope: 'root.module', body: 'imports'}],
 
@@ -9,6 +11,12 @@ export const SCOPE_RULES: { [word: string]: LintScopeRules[] } = {
     animation: [{ scope: 'root.module', title: 'word', body: '=' }],
     copyframe: [{ scope: 'root.module.animation', body: '=' }],
     copyframes: [{ scope: 'root.module.animation', body: '=' }],
+
+    /** ITEM ********************************************************* */
+    item: [{ scope: 'root.module', title: 'word', body: '='}],
+
+    /** RECIPE ********************************************************* */
+    recipe: [{ scope: 'root.module', title: 'word', body: 'recipe'}],
 };
 
 export const PROP_RULES: { [word: string]: LintPropertyRules[] } = {
